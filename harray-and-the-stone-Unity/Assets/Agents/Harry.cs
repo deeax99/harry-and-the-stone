@@ -4,11 +4,14 @@ using UnityEngine;
 
 public class Harry : MonoBehaviour , IAgent
 {
-    [SerializeField] private float jumpSize = .1f;
+    [SerializeField] private float speed = .15f;
     [SerializeField] private Transform theive;
+
+    private Vector3 startPosition;
 
     void Start()
     {
+        startPosition = transform.position;
         EnvironmentElements.instance.agents.Add(this);
     }
 
@@ -17,39 +20,29 @@ public class Harry : MonoBehaviour , IAgent
         switch (action.harryCommand)
         {
             case "left":
-                transform.position += Vector3.left * jumpSize;
+                transform.position += Vector3.left * speed;
                 break;
             case "right":
-                transform.position += Vector3.right * jumpSize;
+                transform.position += Vector3.right * speed;
                 break;
             case "up":
-                transform.position += Vector3.up * jumpSize;
+                transform.position += Vector3.up * speed;
                 break;
             case "down":
-                transform.position += Vector3.down * jumpSize;
+                transform.position += Vector3.down * speed;
                 break;
         }
 
-        EnvironmentElements.instance.environmentState.harryX = Mathf.RoundToInt(transform.position.x / jumpSize).ToString();
-        EnvironmentElements.instance.environmentState.harryY = Mathf.RoundToInt(transform.position.y / jumpSize).ToString();
-
-        UpdateReward();
     }
-    void UpdateReward()
+
+    public void ResetState()
     {
-        int reward;
-        if (Mathf.Abs(transform.position.x) > 6 || Mathf.Abs(transform.position.y) > 4.5f)
-        {
-            reward = -100;
-            transform.position = Vector2.zero;
-        }
-        else
-        {
-            if (Vector2.Distance(theive.position, transform.position) > 1.5f)
-                reward = 1;
-            else 
-                reward = -1;
-        }
-        EnvironmentElements.instance.environmentState.lastReward = reward.ToString();
+        transform.position = startPosition;
+    }
+
+    public void UpdateState()
+    {
+        EnvironmentElements.instance.environmentState.harryX = Mathf.RoundToInt(transform.position.x / EnvironmentElements.PERCESISION).ToString();
+        EnvironmentElements.instance.environmentState.harryY = Mathf.RoundToInt(transform.position.y / EnvironmentElements.PERCESISION).ToString();
     }
 }

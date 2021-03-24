@@ -2,14 +2,15 @@ import random
 
 
 class QLearn:
-    def __init__(self, actions, epsilon=0.1, alpha=0.9, gamma=0.7):
+    def __init__(self, actions, epsilon=0, alpha=0.6, gamma=0.7):
         self.q = {}
 
         self.epsilon = epsilon  # exploration constant
         self.alpha = alpha      # discount constant
         self.gamma = gamma
         self.actions = actions
-
+    # 
+    # table access 
     def getQ(self, state, action):
         return self.q.get((state, action), 0.0)
         # return self.q.get((state, action), 1.0)
@@ -42,6 +43,17 @@ class QLearn:
 
             action = self.actions[i]
         return action
+
+    def learn_2 (self , trajectorys  , cumulative_reward):
+        for trajectory in trajectorys:
+            state = (trajectory["state"] , trajectory["action"])
+            if self.q.get(state , None) != None:
+                self.q[state] =  max(self.q[state] , cumulative_reward)
+            else : 
+                self.q[state] = cumulative_reward
+
+            cumulative_reward -= trajectory["reward"]
+            
 
     def learn(self, state1, action1, reward, state2):
         maxqnew = max([self.getQ(state2, a) for a in self.actions])

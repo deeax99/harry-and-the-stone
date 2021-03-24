@@ -2,6 +2,7 @@ import socket
 import json
 import random
 import qlearning as ql
+from time import sleep
 
 def eof_check (message):
     eof_format = "<EOF>"
@@ -39,40 +40,49 @@ server.listen()
 
 (clientsocket, address) = server.accept()
 
-def randomAction ():
-    dic = {}
-    if random.random() > .5:
-        dic["harryCommand"] = "left"
-    else : 
-        dic["harryCommand"] = "right"
 
-    return dic
-
-prevState = None
-prevAction = None
-prevReward = 0
 
 actions = ["left" , "right" , "up" , "down" , "stop"]
 
 q = ql.QLearn(actions) 
-
+cumulative_reward = 0
+trajectorys = []
+firstEnter = False
 while (True):
 
     message = get_message()
     json_message =  json.loads(message)
-    prevReward = int(json_message["lastReward"])
 
-    del json_message['lastReward']
-    state = json.dumps(json_message)
+    current_reward = int(json_message["lastReward"])
 
-    if prevState != None :
-        q.learn(prevState , prevAction , prevReward , state)
-    
-    prevAction = q.chooseAction(state)
-    prevState = state
-    
     callback_message = {}
-    callback_message["harryCommand"] = prevAction
 
-    json_action = json.dumps(callback_message) 
-    send_message(clientsocket , json_action)
+    if firstEnter == False:
+        firstEnter = True
+    else :
+        trajectorys[-1]["reward"] = current_reward
+        cumulative_reward += current_reward
+    
+    if json_message["isEnd"] == True :
+        q.learn_2(trajectorys , cumulative_reward)
+        trajectorys = []
+        cumulative_reward = 0
+        firstEnter = False
+        #q.epsilon = random.random()
+        callback_message["isEnd"] = True
+    else :
+        state = json.dumps(json_message["state"])
+        action = q.chooseAction(state)
+        
+        trajectory = {}
+        
+        trajectory["state"] = state
+        trajectory["action"] = action
+
+        trajectorys.append(trajectory)
+        
+        callback_message["harryCommand"] = action
+
+
+    json_respond = json.dumps(callback_message) 
+    send_message(clientsocket , json_respond)
