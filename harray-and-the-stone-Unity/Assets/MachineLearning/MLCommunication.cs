@@ -14,10 +14,10 @@ public class MLCommunication
         }
 
     }
-    public static EnviornmentAction GetAction(EnvironmentState state)
+    public static EnviornmentAction GetAction(GameMessage message)
     {
         Initialize();
-        string stateJson = JsonConvert.SerializeObject(state);
+        string stateJson = JsonConvert.SerializeObject(message);
         TCPCommunication.SendData(stateJson);
         EnviornmentAction actoin = JsonConvert.DeserializeObject<EnviornmentAction>(TCPCommunication.ReciveData());
         return actoin;

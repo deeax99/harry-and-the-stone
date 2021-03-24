@@ -9,8 +9,15 @@ public class EnvironmentLoop : MonoBehaviour
     {
         if (stop) return;
 
-        var state = EnvironmentElements.instance.environmentState;
-        var action = MLCommunication.GetAction(state);
-        EnvironmentElements.instance.ApplyAction(action);
+        var message = EnvironmentElements.instance.GetGameMessage();
+        var action = MLCommunication.GetAction(message);
+        if (action.isEnd)
+        {
+            EnvironmentElements.instance.ResetGame();
+        }
+        else
+        {
+            EnvironmentElements.instance.ApplyAction(action);
+        }
     }
 }

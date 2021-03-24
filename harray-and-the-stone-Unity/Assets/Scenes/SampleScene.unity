@@ -152,7 +152,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   target: {fileID: 309556991}
-  speed: 0.5
+  speed: 0.1
 --- !u!212 &185008285
 SpriteRenderer:
   m_ObjectHideFlags: 0
@@ -211,7 +211,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 185008283}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 4, y: 4, z: 0}
+  m_LocalPosition: {x: 3.31, y: 1.92, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children: []
   m_Father: {fileID: 0}
@@ -247,7 +247,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 00c2598fb06663d45bc77d046c62436a, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  jumpSize: 0.1
+  speed: 0.15
   theive: {fileID: 185008286}
 --- !u!212 &309556990
 SpriteRenderer:
@@ -438,6 +438,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 919d6219f630b4845bc6361d41eb0f62, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  harry: {fileID: 309556991}
+  theive: {fileID: 185008286}
 --- !u!4 &1143443216
 Transform:
   m_ObjectHideFlags: 0
