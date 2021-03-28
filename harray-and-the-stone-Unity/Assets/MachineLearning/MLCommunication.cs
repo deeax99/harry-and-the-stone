@@ -14,12 +14,16 @@ public class MLCommunication
         }
 
     }
-    public static EnviornmentAction GetAction(GameMessage message)
+    public static EnviornmentAction GetAction()
+    {
+        Initialize();
+        EnviornmentAction actoin = JsonConvert.DeserializeObject<EnviornmentAction>(TCPCommunication.ReciveData());
+        return actoin;
+    }
+    public static void SendAction(GameMessage message)
     {
         Initialize();
         string stateJson = JsonConvert.SerializeObject(message);
         TCPCommunication.SendData(stateJson);
-        EnviornmentAction actoin = JsonConvert.DeserializeObject<EnviornmentAction>(TCPCommunication.ReciveData());
-        return actoin;
     }
 }

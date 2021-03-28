@@ -56,10 +56,10 @@ public class EnvironmentElements : MonoBehaviour
 
     void UpdateReward()
     {
-        int reward;
+        int reward = 0;
         if (Mathf.Abs(harry.position.x) > 6 || Mathf.Abs(harry.position.y) > 4.5f)
         {
-            reward = -1500;
+            //reward = -1500;
             frameCount = 0;
             gameMessage.isEnd = true;
         }
@@ -67,7 +67,7 @@ public class EnvironmentElements : MonoBehaviour
         {
             if (Vector2.Distance(theive.position, harry.position) < .5f)
             {
-                reward = -1500;
+                //reward = -1500;
                 frameCount = 0;
                 print(harry.position);
                 gameMessage.isEnd = true;
