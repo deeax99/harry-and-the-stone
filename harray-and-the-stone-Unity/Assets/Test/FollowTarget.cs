@@ -24,7 +24,7 @@ public class FollowTarget : MonoBehaviour, IAgent
 
     public void UpdateState()
     {
-        EnvironmentElements.instance.environmentState.theiveX = Mathf.CeilToInt(transform.position.x / EnvironmentElements.PERCESISION).ToString();
-        EnvironmentElements.instance.environmentState.theiveY = Mathf.CeilToInt(transform.position.y / EnvironmentElements.PERCESISION).ToString();
+        EnvironmentElements.instance.environmentState.theiveX = transform.position.x;
+        EnvironmentElements.instance.environmentState.theiveY = transform.position.y;
     }
 }

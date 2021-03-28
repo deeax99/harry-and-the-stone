@@ -2,9 +2,12 @@ import random
 
 
 class QLearn:
-    def __init__(self, actions, epsilon=0, alpha=0.6, gamma=0.7):
+    total_state = 0 
+    unique_state = 0
+    
+    def __init__(self, actions, epsilon=.1, alpha=0.6, gamma=0.7):
         self.q = {}
-
+        self.qvis = {}
         self.epsilon = epsilon  # exploration constant
         self.alpha = alpha      # discount constant
         self.gamma = gamma
@@ -12,7 +15,7 @@ class QLearn:
     # 
     # table access 
     def getQ(self, state, action):
-        return self.q.get((state, action), 0.0)
+        return self.q.get((state, action), -3000)
         # return self.q.get((state, action), 1.0)
 
     def learnQ(self, state, action, reward, value):
@@ -27,7 +30,14 @@ class QLearn:
             self.q[(state, action)] = oldv + self.alpha * (value - oldv)
 
     def chooseAction(self, state):
-        if random.random() < self.epsilon:
+        self.total_state += 1
+        if self.qvis.get(state , None) == None:
+            self.unique_state += 1
+            self.qvis[state] = 1
+        else :
+            self.qvis[state] += 1
+        rand = random.random()
+        if  rand < self.epsilon or (self.total_state / self.unique_state) > self.qvis[state]:
             action = random.choice(self.actions)
         else:
             q = [self.getQ(state, a) for a in self.actions]

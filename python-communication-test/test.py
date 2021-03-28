@@ -48,6 +48,11 @@ q = ql.QLearn(actions)
 cumulative_reward = 0
 trajectorys = []
 firstEnter = False
+factor = .9/]/]]/
+
+all_reward = []
+
+
 while (True):
 
     message = get_message()
@@ -58,6 +63,9 @@ while (True):
     callback_message = {}
 
     if firstEnter == False:
+        trajectorys = []
+        cumulative_reward = 0
+        #q.epsilon = random.random() * factor
         firstEnter = True
     else :
         trajectorys[-1]["reward"] = current_reward
@@ -65,11 +73,9 @@ while (True):
     
     if json_message["isEnd"] == True :
         q.learn_2(trajectorys , cumulative_reward)
-        trajectorys = []
-        cumulative_reward = 0
         firstEnter = False
-        #q.epsilon = random.random()
         callback_message["isEnd"] = True
+        all_reward.append(cumulative_reward)     
     else :
         state = json.dumps(json_message["state"])
         action = q.chooseAction(state)
@@ -83,6 +89,6 @@ while (True):
         
         callback_message["harryCommand"] = action
 
-
+    
     json_respond = json.dumps(callback_message) 
     send_message(clientsocket , json_respond)

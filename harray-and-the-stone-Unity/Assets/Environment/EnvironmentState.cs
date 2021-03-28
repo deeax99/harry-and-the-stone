@@ -9,8 +9,8 @@ public class GameMessage
 }
 public class EnvironmentState
 {
-    public string harryX , harryY;
-    public string theiveX, theiveY;
+    public float harryX , harryY;
+    public float theiveX, theiveY;
 }
 public class EnviornmentAction
 {

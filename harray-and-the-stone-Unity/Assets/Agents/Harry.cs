@@ -42,7 +42,7 @@ public class Harry : MonoBehaviour , IAgent
 
     public void UpdateState()
     {
-        EnvironmentElements.instance.environmentState.harryX = Mathf.RoundToInt(transform.position.x / EnvironmentElements.PERCESISION).ToString();
-        EnvironmentElements.instance.environmentState.harryY = Mathf.RoundToInt(transform.position.y / EnvironmentElements.PERCESISION).ToString();
+        EnvironmentElements.instance.environmentState.harryX = transform.position.x;
+        EnvironmentElements.instance.environmentState.harryY = transform.position.y;
     }
 }
