@@ -5,56 +5,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
-
-
-def eof_check (message):
-    eof_format = "<EOF>"
-    message_len = len(message)
-    if message_len > 5:
-        for i in range(5):
-            if eof_format[i] != message[message_len + i - 5]:
-                return False
-        return True
-    return False
-
-def get_message ():
-    message = ""
-    while (True):
-        data = clientsocket.recv(1024)
-        message += (data.decode('UTF-8'))
-        if eof_check(message):
-            message = message[:-5]
-            break
-        
-    return message
-
-def send_message (client , message):
-    message += "<EOF>"
-    client.send(bytearray(message , 'UTF-8'))
-
-
-SERVER = 'localhost'
-PORT = 7979
-
-server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-server.bind((SERVER , PORT))
-
-server.listen()
-
-(clientsocket, address) = server.accept()
-
-
-
-actions = ["left" , "right" , "up" , "down"]
-
-def action_map (action_id):
-    return actions[action_id]
-def state_map (state):
-    arr = []
-    for i in state.values():
-        arr.append(i)
-    return arr
-
+from unity import Unity
 seed = 42
 gamma = 0.99  # Discount factor for past rewards
 max_steps_per_episode = 10000
@@ -79,20 +30,11 @@ rewards_history = []
 running_reward = 0
 episode_count = 0
 
-test = {}
+unity = Unity()
 
 while (True):
 
-    callback_message = {}
-    callback_message["isEnd"] = True
-
-    json_respond = json.dumps(callback_message) 
-    send_message(clientsocket , json_respond)
-    
-    message = get_message()
-    json_message =  json.loads(message)
-
-    state = state_map(json_message["state"])
+    state = unity.reset()
     
     episode_reward = 0
 
@@ -113,24 +55,8 @@ while (True):
 
             # Apply the sampled action in our environment
             
-            callback_message = {}
-            callback_message["harryCommand"] = action_map(action)
-            json_respond = json.dumps(callback_message) 
-            send_message(clientsocket , json_respond)
+            state , reward , done = unity.action(action)
             
-            if test.get(action , None) == None:
-                test[action] = 1
-            else:
-                 test[action] += 1
-
-            message = get_message()
-            json_message =  json.loads(message)
-
-            reward = int(json_message["lastReward"])
-            state = state_map(json_message["state"])
-            done =  json_message["isEnd"]
-            
-
             rewards_history.append(reward)
             episode_reward += reward
 

@@ -30,6 +30,11 @@ def send_message (client , message):
     client.send(bytearray(message , 'UTF-8'))
 
 
+def send_message (client , message):
+    message += "<EOF>"
+    client.send(bytearray(message , 'UTF-8'))
+
+
 SERVER = 'localhost'
 PORT = 7979
 
