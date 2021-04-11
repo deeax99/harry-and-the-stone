@@ -6,18 +6,21 @@ import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
 from unity import Unity
+
 seed = 42
-gamma = 0.99  # Discount factor for past rewards
+gamma = 1  # Discount factor for past rewards
 max_steps_per_episode = 10000
 eps = np.finfo(np.float32).eps.item()  # Smallest number such that 1.0 + eps != 1.0
 num_inputs = 4
 num_actions = 4
-num_hidden = 128
+num_hidden = 32768
 
 inputs = layers.Input(shape=(num_inputs,))
-common = layers.Dense(num_hidden, activation="relu")(inputs)
+common = layers.Dense(num_hidden, activation="relu" )(inputs)
+common2 = layers.Dense(num_hidden, activation="relu" )(inputs)
+
 action = layers.Dense(num_actions, activation="softmax")(common)
-critic = layers.Dense(1)(common)
+critic = layers.Dense(1)(common2)
 
 model = keras.Model(inputs=inputs, outputs=[action, critic])
 
@@ -31,6 +34,7 @@ episode_count = 0
 
 unity = Unity()
 
+
 while (True):
     
 
@@ -43,11 +47,11 @@ while (True):
         while(True):
             
             state = tf.convert_to_tensor(state)
-            state = tf.expand_dims(state, 0)
+            state = tf.expand_dims(state, 0) # state
 
             # Predict action probabilities and estimated future rewards
             # from environment state
-            action_probs, critic_value = model(state)
+            action_probs, critic_value = model(state) 
             critic_value_history.append(critic_value[0, 0])
 
             # Sample action from action probability distribution
