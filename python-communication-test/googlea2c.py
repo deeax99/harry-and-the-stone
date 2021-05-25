@@ -5,8 +5,9 @@ from unity import Unity
 from matplotlib import pyplot as plt
 from tensorflow.keras import layers
 from typing import Any, List, Sequence, Tuple
-
-
+import os
+import cProfile
+#os.startfile("unity_Build\HarryAndTheStone.exe")
 # Create the environment
 env = Unity()
 
@@ -191,7 +192,7 @@ def train_step(
   return episode_reward
 
 
-max_episodes = 1000000
+max_episodes = 1000
 max_steps_per_episode = 1000
 
 # Cartpole-v0 is considered solved if average reward is >= 195 over 100 
@@ -202,24 +203,25 @@ running_reward = 0
 # Discount factor for future rewards
 gamma = 0.99
 
-avarege = 0
+def main():
+  avarege = 0
+  for i in range(max_episodes):
+    initial_state = tf.convert_to_tensor(env.reset())
+    episode_reward = int(train_step(initial_state, model, optimizer, gamma, max_steps_per_episode))
 
-for i in range(max_episodes):
-  initial_state = tf.convert_to_tensor(env.reset())
-  episode_reward = int(train_step(initial_state, model, optimizer, gamma, max_steps_per_episode))
+    running_reward = episode_reward*0.01 + running_reward*.99
 
-  running_reward = episode_reward*0.01 + running_reward*.99
+      #t.set_description(f'Episode {i}')
+      #t.set_postfix(
+      #    episode_reward=episode_reward, running_reward=running_reward)
 
-    #t.set_description(f'Episode {i}')
-    #t.set_postfix(
-    #    episode_reward=episode_reward, running_reward=running_reward)
+      # Show average episode reward every 10 episodes
+    avarege += episode_reward
+    if i % 10 == 0:
+      print(f'Episode {i}: average reward: {avarege / 10}')
+      avarege = 0
+      #if running_reward > reward_threshold:  
+      #   break
 
-    # Show average episode reward every 10 episodes
-  avarege += episode_reward
-  if i % 10 == 0:
-    print(f'Episode {i}: average reward: {avarege / 10}')
-    avarege = 0
-    #if running_reward > reward_threshold:  
-     #   break
-
-print(f'\nSolved at episode {i}: average reward: {running_reward:.2f}!')
+  print(f'\nSolved at episode {i}: average reward: {running_reward:.2f}!')
+cProfile.run("main()" , "stat.txt")
