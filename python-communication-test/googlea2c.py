@@ -136,7 +136,6 @@ def get_expected_return(
   return returns
 
 
-huber_loss = tf.keras.losses.Huber(reduction=tf.keras.losses.Reduction.SUM)
 
 def compute_loss(
     action_probs: tf.Tensor,  
