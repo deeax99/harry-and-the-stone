@@ -19,11 +19,6 @@ public class EnvironmentState
     public object[] secondThieve;
     public object[] fullState;
 
-    /*
-    public FullState fullState;
-    //public HarryState harryState;
-    public Thieve[] thieve;
-    */
 }
 public class EnviornmentAction
 {

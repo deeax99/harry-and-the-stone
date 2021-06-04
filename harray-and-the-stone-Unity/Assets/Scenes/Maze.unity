@@ -1782,6 +1782,9 @@ MonoBehaviour:
   - {fileID: 1211121588}
   - {fileID: 1232000269}
   - {fileID: 1141896878}
+  firstDiamond: {fileID: 1445207972}
+  secondDiamond: {fileID: 89935147}
+  diamondThreshold: -3.25
 --- !u!1 &827154918
 GameObject:
   m_ObjectHideFlags: 0
@@ -2353,7 +2356,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1211121585}
   m_LocalRotation: {x: 0, y: 0, z: 0.7071068, w: 0.7071068}
-  m_LocalPosition: {x: -4.02, y: -2.47, z: 0}
+  m_LocalPosition: {x: 3.45, y: -4.08, z: 0}
   m_LocalScale: {x: 0.5, y: 0.5, z: 0.5}
   m_Children:
   - {fileID: 1823003546}
@@ -2500,7 +2503,7 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1232000267}
   m_LocalRotation: {x: 0, y: 0, z: 0.7071068, w: 0.7071068}
-  m_LocalPosition: {x: -4.53, y: 0.42, z: 0}
+  m_LocalPosition: {x: -3.26, y: -4.08, z: 0}
   m_LocalScale: {x: 0.5, y: 0.5, z: 0.5}
   m_Children:
   - {fileID: 827154919}
@@ -3484,14 +3487,14 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1640336963}
-  m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0.01, y: 2.54, z: 0}
+  m_LocalRotation: {x: 0, y: 0, z: -0.7071068, w: 0.7071068}
+  m_LocalPosition: {x: 0.15, y: 0.49, z: 0}
   m_LocalScale: {x: 0.5, y: 0.5, z: 0.5}
   m_Children:
   - {fileID: 2025854179}
   m_Father: {fileID: 418431674}
   m_RootOrder: 0
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: -90}
 --- !u!212 &1640336965
 SpriteRenderer:
   m_ObjectHideFlags: 0

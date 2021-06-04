@@ -9,12 +9,14 @@ public class AgentsManager : MonoBehaviour
     public static AgentsManager instance;
 
     [SerializeField] private MonoBehaviour[] agents;
+    [SerializeField] private Transform firstDiamond, secondDiamond;
+    [SerializeField] private float diamondThreshold = -2;
 
     private void OnValidate()
     {
         if (agents == null) return;
         int agentsLength = agents.Length;
-        for (int i =0; i < agentsLength; i++)
+        for (int i = 0; i < agentsLength; i++)
         {
             if (agents[i] is IAgent == false)
             {
@@ -23,14 +25,13 @@ public class AgentsManager : MonoBehaviour
         }
     }
 
-    
+
     public EnvironmentState environmentState;
 
     int frameCount = 0;
 
     private void Awake()
     {
-        
         instance = this;
     }
 
@@ -41,7 +42,6 @@ public class AgentsManager : MonoBehaviour
         {
             agent.ResetState();
         }
-        
     }
 
     public EnvironmentState GetEnviromantState(int frame)
@@ -50,16 +50,16 @@ public class AgentsManager : MonoBehaviour
         {
             agent.UpdateState(frame);
         }
-        UpdateReward();
         return environmentState;
     }
 
-    public void ApplyAction(EnviornmentAction action , int frame)
+    public void ApplyAction(EnviornmentAction action, int frame)
     {
         foreach (IAgent agent in agents)
         {
-            agent.ApplyAction(action , frame);
+            agent.ApplyAction(action, frame);
         }
+        UpdateReward(frame);
     }
     public void AgentStart()
     {
@@ -69,41 +69,24 @@ public class AgentsManager : MonoBehaviour
             agent.AgentStart();
         }
     }
-    void UpdateReward()
+    void UpdateReward(int frame)
     {
-        /*
-        int reward = 0;
-        if (Mathf.Abs(harry.position.x) > 6 || Mathf.Abs(harry.position.y) > 4.5f)
+        var state = environmentState;
+        if ((state.firstThieveEnd && state.secondThieveEnd) || frame == MAX_FRAME)
         {
-            //reward = -1500;
-            frameCount = 0;
-            gameMessage.isEnd = true;
+            state.done = true;
+            state.harryReward = 1;
+            state.thievesReward = -1;
         }
-        else
+        else if (isThieveWinning())
         {
-            if (Vector2.Distance(theive.position, harry.position) < .5f)
-            {
-                //reward = -1500;
-                frameCount = 0;
-                print(harry.position);
-                gameMessage.isEnd = true;
-            }
-            else
-            {
-                reward = 1;
-            }
+            state.done = true;
+            state.harryReward = -1;
+            state.thievesReward = 1;
         }
-
-        if (++frameCount == MAX_FRAME)
-        {
-            gameMessage.isEnd = true;
-            if (reward == 1)
-            {
-                reward = 20;
-            }
-            frameCount = 0;
-        }
-        gameMessage.lastReward = reward.ToString();
-        */
+    }
+    bool isThieveWinning()
+    {
+        return firstDiamond.localPosition.y < diamondThreshold || secondDiamond.localPosition.y < diamondThreshold;
     }
 }

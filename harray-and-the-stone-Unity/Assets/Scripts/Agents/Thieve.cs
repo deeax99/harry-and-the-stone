@@ -2,12 +2,12 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-public class Thieve : MonoBehaviour , IAgent
+public class Thieve : MonoBehaviour, IAgent
 {
     const int THIEVE_STATE_SIZE = 14;
 
-    const float speed = .05f;
-    const float diamondSpeed = .025f;
+    const float speed = .075f;
+    const float diamondSpeed = .04f;
 
     const float lerpSpeed = 15;
     [SerializeField] public int thieveID;
@@ -62,9 +62,9 @@ public class Thieve : MonoBehaviour , IAgent
         agentObservers = new AgentObserver[5];
 
         agentObservers[0] = new AgentObserver(0, transform); //thieve me [0 , 1]
-        agentObservers[1] = new ThieveObserver(2, theOtherThieveTransform , otherThieve); //thieve other [2 , 3]
-        
-        agentObservers[2] = new AgentObserver(4, harryTransform , harryVision); //harry [4 , 6]
+        agentObservers[1] = new ThieveObserver(2, theOtherThieveTransform, otherThieve); //thieve other [2 , 3]
+
+        agentObservers[2] = new AgentObserver(4, harryTransform, harryVision); //harry [4 , 6]
 
         agentObservers[3] = new AgentObserver(7, firstDiamondTransform); // diamond 1 [7 , 8]
         agentObservers[4] = new AgentObserver(9, firstDiamondTransform); // diamond 1 [9 , 10]
@@ -114,7 +114,7 @@ public class Thieve : MonoBehaviour , IAgent
             firstDiamond.DropDiamond(this);
             secondDiamond.DropDiamond(this);
         }
-        else 
+        else
         {
             firstDiamond.GrabDiamond(this);
             secondDiamond.GrabDiamond(this);
@@ -156,6 +156,15 @@ public class Thieve : MonoBehaviour , IAgent
 
         firstDiamond.DropDiamond(this);
         secondDiamond.DropDiamond(this);
+
+        if (thieveID == 1)
+        {
+            AgentsManager.instance.environmentState.firstThieveEnd = true;
+        }
+        else if (thieveID == 2)
+        {
+            AgentsManager.instance.environmentState.secondThieveEnd = true;
+        }
 
         transform.position = Vector2.one * 10000;
         DestoryState();

@@ -4,6 +4,7 @@ using UnityEngine;
 
 public class GameLoop : MonoBehaviour
 {
+
     private int frame = 1;
     private void Start()
     {
