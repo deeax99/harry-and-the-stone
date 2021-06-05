@@ -9,10 +9,9 @@ import os
 import math
 import cProfile
 
-env = Unity()
 huber_loss = tf.keras.losses.Huber(reduction=tf.keras.losses.Reduction.SUM)
-num_actions = 2
-num_hidden_units = 128 
+optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
+
 
 class Actor(tf.keras.Model):
     def __init__(self, num_actions: int, num_hidden_units: int):
@@ -21,7 +20,7 @@ class Actor(tf.keras.Model):
         self.common = layers.Dense(num_hidden_units, activation="relu")
         self.actor = layers.Dense(num_actions)
 
-    def call(self, inputs) :
+    def call(self, inputs):
         x = self.common(inputs)
         return self.actor(x)
 
@@ -33,34 +32,72 @@ class Critic(tf.keras.Model):
         self.common = layers.Dense(num_hidden_units, activation="relu")
         self.critic = layers.Dense(1)
 
-    def call(self, inputs: tf.Tensor) -> Tuple[tf.Tensor, tf.Tensor]:
+    def call(self, inputs: tf.Tensor):
         x = self.common(inputs)
         return self.critic(x)
 
 
 class ActorCritic():
     def __init__(self, optimizer, num_actions, num_hidden_units):
+
         self.actor_model = Actor(num_actions, num_hidden_units)
         self.critic_model = Critic(num_hidden_units)
+
         self.optimizer = optimizer
 
-    def predict(self, actor_state, fully_state):
-        return self.actor_model(actor_state), self.critic_model(fully_state)
+        self.clear()
 
-    def apply_lose(self, actor_loss, critic_loss):
-        with tf.GradientTape() as tape:
-            grads_actor = tape.gradient(
-                actor_loss, self.actor_model.trainable_variables)
-            grads_critic = tape.gradient(
-                critic_loss, self.critic_model.trainable_variables)
+    def predict(self, actor_state, fully_state):
+
+        actor_state = tf.expand_dims(actor_state,0)
+        fully_state = tf.expand_dims(fully_state,0)
+
+        with self.actor_tape:
+            with self.critic_tape:
+                
+                actor_predict = self.actor_model(actor_state)
+                actor_predict_logits = tf.nn.softmax(actor_predict)
+                action = self.get_action(actor_predict_logits)
+
+                critic_predict = self.critic_model(fully_state)
+
+                self.actor_predicts.append(actor_predict_logits[0, action])
+                self.critic_predicts.append(critic_predict[0,0])
+
+                return action, critic_predict[0,0]
+
+    def apply_loss(self, rewards):
+
+        actor_loss, critic_loss = self.compute_loss(rewards)
+
+        grads_actor = self.actor_tape.gradient(
+            actor_loss, self.actor_model.trainable_variables)
+        
+        grads_critic = self.critic_tape.gradient(
+            critic_loss, self.critic_model.trainable_variables)
 
         self.optimizer.apply_gradients(
             zip(grads_actor, self.actor_model.trainable_variables))
+
         self.optimizer.apply_gradients(
             zip(grads_critic, self.critic_model.trainable_variables))
-    
-    
-    
+        
+        self.clear()
+
+    def compute_loss(self, rewards):
+        with self.actor_tape:
+            with self.critic_tape:
+
+                eps_len = len(rewards)
+                expected_rewards = self.get_expected_rewards(rewards)
+                advantage = self.advantage_compute(self.critic_predicts, rewards)
+
+                actions_log = self.actions_log_compute(self.actor_predicts)
+                actor_loss = -tf.reduce_sum(actions_log * advantage)
+
+                critic_loss = huber_loss(self.critic_predicts, rewards)
+                return actor_loss, critic_loss
+
     def get_expected_rewards(self, reward):
         exp_reward = []
         reward_sum = sum(reward)
@@ -73,106 +110,201 @@ class ActorCritic():
 
     def advantage_compute(self, values, rewards):
         advantage = []
-        framecount=len(rewards)
+        framecount = len(rewards)
         for i in range(framecount):
             advantage.append(rewards[i] - values[i])
 
         return advantage
 
     def actions_log_compute(self, actions):
-        action_log = []
-
-        for action in actions:
-            action_log.append(math.log(action))
-
-        return action_log
-
-    def compute_lose(self, action_probs, values, rewards ):
-        framecount=len(rewards)
-        rewards = self.get_expected_rewards(rewards)
-        advantage = self.advantage_compute(values, rewards, framecount)
-        actions_log = self.actions_log_compute(action_probs)
-
-        actor_lose = 0
-        for i in range(framecount):
-            actor_lose -= actions_log[i] * advantage[i]
-
-        critic_lose = huber_loss(values, rewards)
-        return actor_lose, critic_lose
-    
+        return tf.math.log(actions)
 
 
-def train(first_state,max_steps):
-    harry_act_probs, first_thief_act_probs, second_thief_act_probs,harry_vals,first_thief_vals,second_thief_vals,harry_rewards,first_thief_rewards,second_thief_rewards= start_ep(first_state,max_steps)
+    def get_action(self, action_distribution):
+        return tf.random.categorical(action_distribution, 1)[0, 0]
 
-    harry_expected_rewards=harry.get_expected_rewards(harry_rewards)
-    first_thief_expected_rewards=first_thief.get_expected_rewards(first_thief_rewards)
-    second_thief_expected_rewards=second_thief.get_expected_rewards(second_thief_rewards)
+    def clear(self):
+        self.actor_tape = tf.GradientTape()
+        self.critic_tape = tf.GradientTape()
+        with self.actor_tape:
+            with self.critic_tape:
+                self.actor_predicts = []
+                self.critic_predicts = []
 
-    harry_actor_loss, harry_critic_lose = harry.compute_loss(harry_act_probs, harry_vals, harry_expected_rewards)
-    first_thief_actor_loss, first_thief_critic_lose = first_thief.compute_loss(first_thief_act_probs, first_thief_vals, first_thief_expected_rewards)
-    second_thief_actor_loss, second_thief_critic_lose = second_thief.compute_loss(second_thief_act_probs, second_thief_vals, second_thief_expected_rewards)
 
-    harry.apply_lose(harry_actor_loss,harry_critic_lose)
-    first_thief.apply_lose(first_thief_actor_loss,first_thief_critic_lose)
-    second_thief.apply_lose(second_thief_actor_loss,second_thief_critic_lose)
+seed = 51
+tf.random.set_seed(seed)
+np.random.seed(seed)
 
-    harry_episode_reward=0
-    first_thief_episode_reward=0
-    second_thief_episode_reward=0
+act = tf.expand_dims([5, 4], 0)
+crit = tf.expand_dims([2, 4, 5, 5, 6], 0)
 
-    for i in harry_rewards :
-        harry_episode_reward+=i
-    
-    for i in first_thief_rewards :
-       first_thief_episode_reward+=i
-    
-    for i in second_thief_rewards :
-        second_thief_episode_reward+=i
-    
-    return harry_episode_reward , first_thief_episode_reward , second_thief_episode_reward
 
-def start_ep(initial_state , max_steps):
-    harry_act_probs=[]
-    first_thief_act_probs=[]
-    second_thief_act_probs=[]
-    
-    harry_vals=[]
-    first_thief_vals=[]
-    second_thief_vals=[]
+def test():
+    critic_nn = Critic(16)
+    tape = tf.GradientTape()
 
-    harry_rewards=[]
-    first_thief_rewards=[]
-    second_thief_rewards=[]
+    act = tf.expand_dims([5, 4], 0)
+    with tape:
+        a = tf.convert_to_tensor([4.2, 2.1, 4.4])
+        pred = critic_nn(act)
+
+        loss = 0
+        for i in range(3):
+            loss += a[i] * pred[0, 0]
+
+    grad = tape.gradient(loss, critic_nn.trainable_variables)
+    print(grad)
+    exit()
+
+def test2():
+    a2c = ActorCritic(optimizer,2,8)
+    a = a2c.predict([1,2,3.2] , [3.1,4.3,1.0])
+    b = a2c.predict([1,2,3.2] , [3.6,3.3,2.0])
+    c = a2c.predict([1,4,3.1] , [4.1,4.3,1.0])
+    rewards = [1,3,4]
+    a2c.apply_loss(rewards)
+    a = a2c.predict([1,2,3.2] , [3.1,4.3,1.0])
+    b = a2c.predict([1,2,3.2] , [3.6,3.3,2.0])
+    c = a2c.predict([1,4,3.1] , [4.1,4.3,1.0])
+    a2c.apply_loss(rewards)
+
+    exit()
+
+def test3():
+    a = Actor(2,8)
+    c = Critic(8)
+    al = []
+    cl = []
+    with tf.GradientTape() as tape1:
+        with tf.GradientTape() as tape2:
+            ap = a(act)
+            cp = c(crit)
+            
+            al.append(ap[0,0])
+            cl.append(cp[0,0])
+
+    g1 = tape1.gradient(cl[0],a.trainable_variables)
+    g2 = tape2.gradient(al[0],c.trainable_variables)
+    print(g1)
+    print(g2)
+    exit()
+test2()
+
+print("Start learning")
+
+
+a2c = ActorCritic(optimizer, 4, 128)
+
+aa, cc = a2c.predict(act, crit)
+print(aa, cc)
+exit()
+
+a2c.apply_loss(3, 3)
+
+exit()
+
+test = ActorCritic(optimizer, 2, 128)
+
+v = test.predict(act, crit)
+
+crit_loss = tf.convert_to_tensor(.9)
+act_loss = tf.convert_to_tensor(.4)
+print(v)
+
+
+test.apply_loss(act_loss, crit_loss)
+
+print(v)
+exit()
+env = Unity()
+
+
+def train(first_state, max_steps):
+    harry_act_probs, first_thief_act_probs, second_thief_act_probs, harry_vals, first_thief_vals, second_thief_vals, harry_rewards, first_thief_rewards, second_thief_rewards = start_ep(
+        first_state, max_steps)
+
+    harry_expected_rewards = harry.get_expected_rewards(harry_rewards)
+    first_thief_expected_rewards = first_thief.get_expected_rewards(
+        first_thief_rewards)
+    second_thief_expected_rewards = second_thief.get_expected_rewards(
+        second_thief_rewards)
+
+    harry_actor_loss, harry_critic_loss = harry.compute_loss(
+        harry_act_probs, harry_vals, harry_expected_rewards)
+    first_thief_actor_loss, first_thief_critic_loss = first_thief.compute_loss(
+        first_thief_act_probs, first_thief_vals, first_thief_expected_rewards)
+    second_thief_actor_loss, second_thief_critic_loss = second_thief.compute_loss(
+        second_thief_act_probs, second_thief_vals, second_thief_expected_rewards)
+
+    harry.apply_loss(harry_actor_loss, harry_critic_loss)
+    first_thief.apply_loss(first_thief_actor_loss, first_thief_critic_loss)
+    second_thief.apply_loss(second_thief_actor_loss, second_thief_critic_loss)
+
+    harry_episode_reward = 0
+    first_thief_episode_reward = 0
+    second_thief_episode_reward = 0
+
+    for i in harry_rewards:
+        harry_episode_reward += i
+
+    for i in first_thief_rewards:
+       first_thief_episode_reward += i
+
+    for i in second_thief_rewards:
+        second_thief_episode_reward += i
+
+    return harry_episode_reward, first_thief_episode_reward, second_thief_episode_reward
+
+
+def start_ep(initial_state, max_steps):
+    harry_act_probs = []
+    first_thief_act_probs = []
+    second_thief_act_probs = []
+
+    harry_vals = []
+    first_thief_vals = []
+    second_thief_vals = []
+
+    harry_rewards = []
+    first_thief_rewards = []
+    second_thief_rewards = []
 
     initial_state_shape = initial_state.shape
     state = initial_state
 
     for t in range(max_steps):
-        
-        harry_act_logits_t ,harry_val=harry(state)
-        first_thief_act_logits_t ,first_thief_val=first_thief(state)
-        second_thief_act_logits_t ,second_thief_val=second_thief(state)
 
-        harry_action=tf.random.categorical(harry_act_logits_t, 1)[0, 0]  #i didn't know if you want me to not use tf so i just used tf
-        first_thief_action=tf.random.categorical(first_thief_act_logits_t, 1)[0, 0]
-        second_thief_action=tf.random.categorical(second_thief_act_logits_t, 1)[0, 0]
+        harry_act_logits_t, harry_val = harry(state)
+        first_thief_act_logits_t, first_thief_val = first_thief(state)
+        second_thief_act_logits_t, second_thief_val = second_thief(state)
+
+        # i didn't know if you want me to not use tf so i just used tf
+        harry_action = tf.random.categorical(harry_act_logits_t, 1)[0, 0]
+        first_thief_action = tf.random.categorical(
+            first_thief_act_logits_t, 1)[0, 0]
+        second_thief_action = tf.random.categorical(
+            second_thief_act_logits_t, 1)[0, 0]
 
         harry_action_probs_t = tf.nn.softmax(harry_act_logits_t)
         firt_thief_action_probs_t = tf.nn.softmax(first_thief_act_logits_t)
         second_thief_action_probs_t = tf.nn.softmax(second_thief_act_logits_t)
 
-        harry_vals.append(t, tf.squeeze(harry_val) )
-        first_thief_vals.append(t, tf.squeeze(first_thief_val) )
-        second_thief_vals.append(t, tf.squeeze(second_thief_val) )
+        harry_vals.append(t, tf.squeeze(harry_val))
+        first_thief_vals.append(t, tf.squeeze(first_thief_val))
+        second_thief_vals.append(t, tf.squeeze(second_thief_val))
 
-        harry_act_probs.append(t,harry_action_probs_t[0, harry_action])
-        first_thief_act_probs.append(t,firt_thief_action_probs_t[0, first_thief_action])
-        second_thief_act_probs.append(t,second_thief_action_probs_t[0, second_thief_action])
+        harry_act_probs.append(t, harry_action_probs_t[0, harry_action])
+        first_thief_act_probs.append(
+            t, firt_thief_action_probs_t[0, first_thief_action])
+        second_thief_act_probs.append(
+            t, second_thief_action_probs_t[0, second_thief_action])
 
         state, harry_reward, harry_done = tf_env_step(harry_action)
-        state, first_thief_reward, first_thief_done = tf_env_step(first_thief_action)
-        state, second_thief_reward, second_thief_done = tf_env_step(second_thief_action)
+        state, first_thief_reward, first_thief_done = tf_env_step(
+            first_thief_action)
+        state, second_thief_reward, second_thief_done = tf_env_step(
+            second_thief_action)
 
         state.set_shape(initial_state_shape)
 
@@ -180,34 +312,36 @@ def start_ep(initial_state , max_steps):
         first_thief_rewards.append(first_thief_reward)
         second_thief_rewards.append(second_thief_rewards)
 
-        if harry_done and first_thief_done and second_thief_done :
+        if harry_done and first_thief_done and second_thief_done:
             break
-    
 
-    return harry_act_probs, first_thief_act_probs, second_thief_act_probs,harry_vals,first_thief_vals,second_thief_vals,harry_rewards,first_thief_rewards,second_thief_rewards
+    return harry_act_probs, first_thief_act_probs, second_thief_act_probs, harry_vals, first_thief_vals, second_thief_vals, harry_rewards, first_thief_rewards, second_thief_rewards
 
-   
-def tf_env_step(self,action) :
+
+def tf_env_step(self, action):
     return tf.numpy_function(self.env_step, [action], [tf.float32, tf.int32, tf.int32])
 
-def env_step(self,action):
+
+def env_step(self, action):
     state, reward, done = env.action(action)
     return (np.asarray(state), np.array(reward, np.int32), np.array(done, np.int32))
 
 
+num_actions = 2
+num_hidden_units = 128
+
 
 harry = ActorCritic(num_actions, num_hidden_units)
 
-first_thief =ActorCritic(3, num_hidden_units)
+first_thief = ActorCritic(3, num_hidden_units)
 
 second_thief = ActorCritic(3, num_hidden_units)
-
-optimizer = tf.keras.optimizers.Adam(learning_rate=0.01)
 
 
 max_episodes = 1000
 max_steps_per_episode = 1000
 running_reward = 0
+
 
 def main():
     avarege = 0
@@ -216,31 +350,17 @@ def main():
         episode_reward = int(train(initial_state, max_steps_per_episode))
         running_reward = episode_reward*0.01 + running_reward*.99
 
-     
         avarege += episode_reward
         if i % 10 == 0:
             print(f'Episode {i}: average reward: {avarege / 10}')
             avarege = 0
-      #if running_reward > reward_threshold:  
+      #if running_reward > reward_threshold:
       #   break
 
     print(f'\nSolved at episode {i}: average reward: {running_reward:.2f}!')
 
 
-cProfile.run("main()" , "stat.txt")
-
-
-
-
-
-
-
-
-
-
-
-
-
+cProfile.run("main()", "stat.txt")
 
 
 """
@@ -259,10 +379,10 @@ def train_step(initial_state, model, optimizer, max_steps_per_episode):
     action_probs, values, returns = [tf.expand_dims(x, 1) for x in [action_probs, values, returns]] 
 
     
-    actor_loss, critic_lose = model.compute_loss(action_probs, values, returns)
+    actor_loss, critic_loss = model.compute_loss(action_probs, values, returns)
 
  
-    model.apply_lose(actor_loss,critic_lose)
+    model.apply_loss(actor_loss,critic_loss)
 
     episode_reward = tf.math.reduce_sum(rewards)
 
