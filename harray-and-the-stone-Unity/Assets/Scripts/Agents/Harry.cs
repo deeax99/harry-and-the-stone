@@ -72,7 +72,7 @@ public class Harry : MonoBehaviour , IAgent
 
     public void ApplyAction(EnviornmentAction action, int frame)
     {
-        Vector2 harryPosition = Vector2.zero;
+        Vector2 harryPosition = new Vector2(action.harryX, action.harryY);
         harryPosition.Normalize();
 
         if (harryPosition.sqrMagnitude > .1f * .1f)

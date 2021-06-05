@@ -4,7 +4,7 @@ using UnityEngine;
 public class AgentsManager : MonoBehaviour
 {
     public const float PERCESISION = .1f;
-    public const int MAX_FRAME = 2550;
+    public const int MAX_FRAME = 250;
 
     public static AgentsManager instance;
 
