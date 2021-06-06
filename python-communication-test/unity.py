@@ -33,12 +33,9 @@ class Unity:
         action_message["secondThieveGrab"] = thieve_grab
     
 
-    def __init__(self , client = None):
-        if client:
-            self.client = client
-        else:
-            self.tcp_connection = TCPConnection(7979)
-            self.client = self.tcp_connection.get_client() 
+    def __init__(self , port = 7979):
+        self.tcp_connection = TCPConnection(port)
+        self.client = self.tcp_connection.get_client() 
 
     def get_state(self , unity_message):
         return unity_message["fullState"] ,unity_message["harryState"] , unity_message["firstThieve"] , unity_message["secondThieve"]
