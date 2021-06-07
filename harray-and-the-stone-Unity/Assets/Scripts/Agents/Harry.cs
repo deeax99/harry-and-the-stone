@@ -91,7 +91,7 @@ public class Harry : MonoBehaviour , IAgent
             observer.Update(harryState, frame);
         }
 
-        harryState[14] = frame;
+        harryState[14] = frame / 200f;
 
     }
     public void ResetState()

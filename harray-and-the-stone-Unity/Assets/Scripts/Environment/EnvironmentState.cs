@@ -12,7 +12,7 @@ public class EnvironmentState
 {
     public bool done;
     public bool firstThieveEnd, secondThieveEnd;
-    public int harryReward, thievesReward;
+    public float harryReward, firstThievesReward , secondThieveReward;
 
     public object[] harryState;
     public object[] firstThieve;

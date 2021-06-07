@@ -29,7 +29,7 @@ class ActorCritic(tf.keras.Model):
     """Initialize."""
     super().__init__()
 
-    self.common = layers.Dense(num_hidden_units, activation="relu")
+    self.common = layers.Dense(num_hidden_units, activation="tanh")
     self.actor = layers.Dense(num_actions)
     self.critic = layers.Dense(1)
 

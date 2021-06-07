@@ -33,11 +33,11 @@ public class AgentObserver
     }
     void UpdateValues(object[] agnetState, Vector2 position , int frame)
     {
-        agnetState[startIndex] = position.x;
-        agnetState[startIndex + 1] = position.y;
+        agnetState[startIndex] = position.x / 5;
+        agnetState[startIndex + 1] = position.y / 5;
         if (updateFrame)
         {
-            agnetState[startIndex + 2] = frame;
+            agnetState[startIndex + 2] = frame / 200f;
         }
     }
     public virtual bool IsDead()

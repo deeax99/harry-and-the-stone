@@ -48,7 +48,7 @@ class Unity:
 
         state = self.get_state(unity_message)
         
-        reward = ((int)(unity_message["harryReward"]) , (int)(unity_message["thievesReward"]))
+        reward = ((float)(unity_message["harryReward"]) , (float)(unity_message["firstThievesReward"]) , (float)(unity_message["secondThieveReward"]))
         done = (unity_message["done"] , unity_message["firstThieveEnd"] , unity_message["secondThieveEnd"])
 
         return state, reward, done

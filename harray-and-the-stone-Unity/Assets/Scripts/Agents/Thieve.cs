@@ -137,7 +137,7 @@ public class Thieve : MonoBehaviour, IAgent
 
         thieveState[11] = carryStatus;
         thieveState[12] = otherThieve.carryStatus;
-        thieveState[13] = frame;
+        thieveState[13] = frame / 200f;
 
     }
 
