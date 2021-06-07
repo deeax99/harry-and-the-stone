@@ -17,10 +17,11 @@ import os
 import time
 from tcp import TCPUitility
 from tcp import TCPConnection
+import string
 
 os.environ['TF_XLA_FLAGS'] = '--tf_xla_enable_xla_devices'
 
-DEBUG = True
+DEBUG = False
 
 optimizer = tf.keras.optimizers.Adam(learning_rate=5e-4)
 huber_loss = tf.keras.losses.Huber(reduction=tf.keras.losses.Reduction.SUM)
@@ -68,6 +69,12 @@ class ActorCritic():
         self.instance_count = instance_count
 
         self.clear()
+    def save (self,actor_name):
+        letters = string.ascii_lowercase
+        result_str = ''.join(random.choice(letters) for i in range(12))
+        self.actor_model.save("Model/{}/ActorModel/{}".format(actor_name,result_str))
+        self.critic_model.save("Model/{}/CriticModel/{}".format(actor_name,result_str))
+
 
     def predict(self, actor_states, fully_states, instances_id, debug=False):
         with self.actor_tape, self.critic_tape:
@@ -473,7 +480,12 @@ class Worker():
                   
             print("Harry reward")
             batch_index += self.instance_count
-
+            
+            if (i+1) % 100 == 0 :
+                self.harry_a2c.save("Harry")
+                self.first_thieve_a2c.save("FirstThieve")
+                self.second_thieve_a2c.save("SecondThieve")
+                
         self.close()
 
     def close(self):
@@ -486,7 +498,7 @@ class Worker():
 
 
 def main():
-    worker = Worker(unity_instance=5,unity_count=3, port=7979, is_subprocess=True)
+    worker = Worker(unity_instance=6,unity_count=5, port=7979, is_subprocess=True)
     worker.train(10000)
 
 if __name__ == "__main__":
