@@ -27,6 +27,7 @@ public class EnviornmentAction
     public float firstThieveX, firstThieveY;
     public float secondThieveX, secondThieveY;
     public int firstThieveGrab , secondThieveGrab;
+    public int continerID;
 }
 /*
 public class FullState 13 input

@@ -25,7 +25,7 @@ DEBUG = True
 optimizer = tf.keras.optimizers.Adam(learning_rate=5e-4)
 huber_loss = tf.keras.losses.Huber(reduction=tf.keras.losses.Reduction.SUM)
 
-num_hidden_units = 2048
+num_hidden_units = 512
 
 
 class Actor(tf.keras.Model):
@@ -452,19 +452,25 @@ class Worker():
                 harry_rewards.append(info.harry_reward)
                 ft_rewards.append(info.first_thieve)
                 st_rewards.append(info.second_thieve)
+            
             if DEBUG:
                 print("start apply loss")
-            self.harry_a2c.apply_loss(harry_rewards)
-            if DEBUG:
-                print("harry done")
-            self.first_thieve_a2c.apply_loss(ft_rewards)
-            if DEBUG:
-                print("ft done")
-            self.second_thieve_a2c.apply_loss(st_rewards)
-            if DEBUG:
-                print("st done")
+
+            harry_loss = threading.Thread(target=self.harry_a2c.apply_loss,args=(harry_rewards,))
+            ft_loss = threading.Thread(target=self.first_thieve_a2c.apply_loss,args=(ft_rewards,))
+            st_loss = threading.Thread(target=self.second_thieve_a2c.apply_loss,args=(st_rewards,))
+            
+            harry_loss.start()
+            ft_loss.start()
+            st_loss.start()
+
+            harry_loss.join()
+            ft_loss.join()
+            st_loss.join()
+            
             print(str(batch_index) + " : " +
                   str(batch_index + self.instance_count))
+                  
             print("Harry reward")
             batch_index += self.instance_count
 

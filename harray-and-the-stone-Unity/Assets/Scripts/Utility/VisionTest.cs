@@ -46,17 +46,17 @@ public class VisionTest : MonoBehaviour
     #region Update Transform
     void UpdatePosition()
     {
-        transform.position = (pointA.position + pointB.position) / 2;
+        transform.localPosition = (pointA.localPosition + pointB.localPosition) / 2;
     }
     void UpdateRotation()
     {
-        Vector3 diff = pointA.position - pointB.position;
+        Vector3 diff = pointA.localPosition - pointB.localPosition;
         float angle = Mathf.Atan2(diff.y, diff.x) * Mathf.Rad2Deg;
         transform.rotation = Quaternion.Euler(0, 0, angle);
     }
     void UpdateScale()
     {
-        float distnace = Vector3.Distance(pointA.position, pointB.position);
+        float distnace = Vector3.Distance(pointA.localPosition, pointB.localPosition);
         transform.localScale = Vector3.right * distnace + new Vector3(0, .01f, 1);
     }
     #endregion
@@ -74,7 +74,7 @@ public class VisionTest : MonoBehaviour
     bool IsInsideFOV()
     {
         Vector3 forward = pointA.right;
-        Vector3 diff = pointB.position - pointA.position;
+        Vector3 diff = pointB.localPosition - pointA.localPosition;
         float angle = Vector3.AngleBetween(forward, diff) * Mathf.Rad2Deg;
         return angle < VISISON_ANGLE || angle > 360 - VISISON_ANGLE;
     }

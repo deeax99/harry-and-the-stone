@@ -4,25 +4,32 @@ using UnityEngine;
 using Newtonsoft.Json;
 public class MLCommunication
 {
-    private static bool isInitialized = false;
-    static void Initialize()
+    private bool isInitialized = false;
+    private TCPCommunication tcpCommunication;
+    private int port;
+    public MLCommunication(int port)
+    {
+        tcpCommunication = new TCPCommunication();
+        this.port = port;
+    }
+    void Initialize()
     {
         if (!isInitialized)
         {
-            TCPCommunication.InitializationClient();
+            tcpCommunication.InitializationClient(port);
             isInitialized = true;
         }
     }
-    public static EnviornmentAction GetAction()
+    public EnviornmentAction GetAction()
     {
         Initialize();
-        EnviornmentAction actoin = JsonConvert.DeserializeObject<EnviornmentAction>(TCPCommunication.ReciveData());
+        EnviornmentAction actoin = JsonConvert.DeserializeObject<EnviornmentAction>(tcpCommunication.ReciveData());
         return actoin;
     }
-    public static void SendAction(EnvironmentState message)
+    public void SendAction(EnvironmentState message)
     {
         Initialize();
         string stateJson = JsonConvert.SerializeObject(message);
-        TCPCommunication.SendData(stateJson);
+        tcpCommunication.SendData(stateJson);
     }
 }

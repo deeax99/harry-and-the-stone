@@ -7,6 +7,8 @@ public class FullyObserver : MonoBehaviour, IAgent
 {
     const int FULLY_STATE_SIZE = 13;
 
+    [SerializeField] private AgentsManager agentsManager;
+
     [SerializeField] private Harry harry;
     [SerializeField] private Thieve firstThieve, secondThieve;
     [SerializeField] private Diamond firstDiamond, secondDiamond;
@@ -22,7 +24,7 @@ public class FullyObserver : MonoBehaviour, IAgent
 
     private void InitializeState()
     {
-        var state = AgentsManager.instance.environmentState;
+        var state = agentsManager.environmentState;
         state.fullState = new object[FULLY_STATE_SIZE];
     }
 
@@ -41,7 +43,7 @@ public class FullyObserver : MonoBehaviour, IAgent
     }
     void InitializePosition()
     {
-        var fullyState = AgentsManager.instance.environmentState.fullState;
+        var fullyState = agentsManager.environmentState.fullState;
 
         agentObservers[0].Initialization(fullyState, harry.initialPosition);
 
@@ -63,7 +65,7 @@ public class FullyObserver : MonoBehaviour, IAgent
 
     public void UpdateState(int frame)
     {
-        var fullyState = AgentsManager.instance.environmentState.fullState;
+        var fullyState = agentsManager.environmentState.fullState;
 
         foreach (AgentObserver observer in agentObservers)
         {

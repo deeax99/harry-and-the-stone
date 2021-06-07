@@ -13,14 +13,14 @@ public class Diamond : MonoBehaviour , IAgent
 
     public void AgentStart()
     {
-        initialPosition = transform.position;
+        initialPosition = transform.localPosition;
     }
 
     public void ApplyAction(EnviornmentAction action, int frame)
     {
         if (followThieve > 0)
         {
-            transform.position = thieves[followThieve - 1].transform.position;
+            transform.localPosition = thieves[followThieve - 1].transform.localPosition;
         }
     }
 
@@ -32,12 +32,12 @@ public class Diamond : MonoBehaviour , IAgent
     public void ResetState()
     {
         followThieve = 0;
-        transform.position = initialPosition;
+        transform.localPosition = initialPosition;
     }
 
     public void GrabDiamond(Thieve thieve)
     {
-        if (thieve.carryStatus == 0 && CanGrab(thieve.transform.position))
+        if (thieve.carryStatus == 0 && CanGrab(thieve.transform.localPosition))
         {
             thieve.carryStatus = thieve.thieveID;
             followThieve = thieve.thieveID;
@@ -54,6 +54,6 @@ public class Diamond : MonoBehaviour , IAgent
     bool CanGrab(Vector2 position)
     {
         const float MAX_DISTANCE = 1;
-        return Vector2.Distance(transform.position, position) < MAX_DISTANCE;
+        return Vector2.Distance(transform.localPosition, position) < MAX_DISTANCE;
     }
 }
