@@ -9,6 +9,9 @@ public class Harry : MonoBehaviour , IAgent
     const float speed = .05f;
     const float lerpSpeed = 15;
 
+
+    [SerializeField] private AgentsManager agentsManager;
+
     [SerializeField] private Transform firstThieveTransform, secondThieveTransform;
     [SerializeField] private Transform firstDiamondTransform , secondDiamondTransform;
 
@@ -32,7 +35,7 @@ public class Harry : MonoBehaviour , IAgent
     }
     void InitializeState()
     {
-        var state = AgentsManager.instance.environmentState;
+        var state = agentsManager.environmentState;
         state.harryState = new object[HARRY_STATE_SIZE];
     }
 
@@ -58,8 +61,8 @@ public class Harry : MonoBehaviour , IAgent
     }
     void InitializePosition()
     {
-        var harryState = AgentsManager.instance.environmentState.harryState;
-        initialPosition = transform.position;
+        var harryState = agentsManager.environmentState.harryState;
+        initialPosition = transform.localPosition;
         
         agentObservers[0].Initialization(harryState, initialPosition);
         
@@ -80,11 +83,11 @@ public class Harry : MonoBehaviour , IAgent
             float angle = Mathf.Atan2(harryPosition.y, harryPosition.x) * Mathf.Rad2Deg;
             transform.rotation = Quaternion.Lerp(transform.rotation, Quaternion.Euler(0, 0, angle), lerpSpeed);
         }
-        transform.position += (Vector3)harryPosition * speed;
+        transform.localPosition += (Vector3)harryPosition * speed;
     }
     public void UpdateState(int frame)
     {
-        var harryState = AgentsManager.instance.environmentState.harryState;
+        var harryState = agentsManager.environmentState.harryState;
 
         foreach (AgentObserver observer in agentObservers)
         {
@@ -96,7 +99,7 @@ public class Harry : MonoBehaviour , IAgent
     }
     public void ResetState()
     {
-        transform.position = initialPosition;
+        transform.localPosition = initialPosition;
         InitializeState();
         InitializePosition();
     }

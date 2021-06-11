@@ -4,9 +4,7 @@ using UnityEngine;
 public class AgentsManager : MonoBehaviour
 {
     public const float PERCESISION = .1f;
-    public const int MAX_FRAME = 250;
-
-    public static AgentsManager instance;
+    public const int MAX_FRAME = 350;
 
     [SerializeField] private MonoBehaviour[] agents;
 
@@ -36,11 +34,6 @@ public class AgentsManager : MonoBehaviour
     public EnvironmentState environmentState;
 
     int frameCount = 0;
-
-    private void Awake()
-    {
-        instance = this;
-    }
 
     public void ResetGame()
     {

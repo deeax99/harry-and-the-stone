@@ -10,8 +10,11 @@ public class Thieve : MonoBehaviour, IAgent
     const float diamondSpeed = .04f;
 
     const float lerpSpeed = 15;
+
     [SerializeField] public int thieveID;
 
+    [SerializeField] private AgentsManager agentsManager;
+    
     [SerializeField] private Transform harryTransform;
     [SerializeField] private Transform theOtherThieveTransform;
     [SerializeField] private Transform firstDiamondTransform, secondDiamondTransform;
@@ -39,7 +42,7 @@ public class Thieve : MonoBehaviour, IAgent
     }
     void InitializeState()
     {
-        var state = AgentsManager.instance.environmentState;
+        var state = agentsManager.environmentState;
         if (thieveID == 1)
         {
             state.firstThieve = new object[THIEVE_STATE_SIZE];
@@ -74,15 +77,15 @@ public class Thieve : MonoBehaviour, IAgent
     {
         var thieveState = GetThieveState();
 
-        initialPosition = transform.position;
+        initialPosition = transform.localPosition;
 
         agentObservers[0].Initialization(thieveState, initialPosition);
 
         agentObservers[1].Initialization(thieveState, otherThieve.initialPosition);
         agentObservers[2].Initialization(thieveState, harry.initialPosition);
 
-        agentObservers[3].Initialization(thieveState, firstDiamondTransform.position);
-        agentObservers[4].Initialization(thieveState, secondDiamondTransform.position);
+        agentObservers[3].Initialization(thieveState, firstDiamondTransform.localPosition);
+        agentObservers[4].Initialization(thieveState, secondDiamondTransform.localPosition);
 
     }
 
@@ -120,7 +123,7 @@ public class Thieve : MonoBehaviour, IAgent
             secondDiamond.GrabDiamond(this);
         }
         float thieveSpeed = carryStatus == 0 ? speed : diamondSpeed;
-        transform.position += (Vector3)thievePosition * thieveSpeed;
+        transform.localPosition += (Vector3)thievePosition * thieveSpeed;
     }
 
     public void UpdateState(int frame)
@@ -143,7 +146,7 @@ public class Thieve : MonoBehaviour, IAgent
 
     public void ResetState()
     {
-        transform.position = initialPosition;
+        transform.localPosition = initialPosition;
         carryStatus = 0;
         isDead = false;
         InitializeState();
@@ -159,19 +162,19 @@ public class Thieve : MonoBehaviour, IAgent
 
         if (thieveID == 1)
         {
-            AgentsManager.instance.environmentState.firstThieveEnd = true;
+            agentsManager.environmentState.firstThieveEnd = true;
         }
         else if (thieveID == 2)
         {
-            AgentsManager.instance.environmentState.secondThieveEnd = true;
+            agentsManager.environmentState.secondThieveEnd = true;
         }
 
-        transform.position = Vector2.one * 10000;
+        transform.localPosition = Vector2.one * 10000;
         DestoryState();
     }
     object[] GetThieveState()
     {
-        var state = AgentsManager.instance.environmentState;
+        var state = agentsManager.environmentState;
         if (thieveID == 1)
         {
             return state.firstThieve;
@@ -187,7 +190,7 @@ public class Thieve : MonoBehaviour, IAgent
     }
     void DestoryState()
     {
-        var state = AgentsManager.instance.environmentState;
+        var state = agentsManager.environmentState;
         if (thieveID == 1)
         {
             state.firstThieve = new object[0];

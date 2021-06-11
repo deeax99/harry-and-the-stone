@@ -5,11 +5,12 @@ using UnityEngine;
 public class SemiReward : MonoBehaviour
 {
     [SerializeField] private int agentID;
+    [SerializeField] private AgentsManager agentsManager;
     private void OnTriggerEnter2D(Collider2D collision)
     {
-        if (AgentsManager.instance.AgentCheck(collision.gameObject, agentID))
+        if (agentsManager.AgentCheck(collision.gameObject, agentID))
         {
-            AgentsManager.instance.SemiRewardTrigger(GetInstanceID(), agentID);
+            agentsManager.SemiRewardTrigger(GetInstanceID(), agentID);
         }
     }
 }

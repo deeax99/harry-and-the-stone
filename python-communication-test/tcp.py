@@ -1,5 +1,6 @@
 import json
 import socket
+from threading import Thread, Lock
 
 
 class TCPUitility:
@@ -15,21 +16,24 @@ class TCPUitility:
         return False
 
     @staticmethod
-    def get_message(client):
+    def get_message(tcp):
         message = ""
         while (True):
-            data = client.recv(1024)
+            data = tcp.client.recv(1024)
             message += (data.decode('UTF-8'))
             if TCPUitility.eof_check(message):
                 message = message[:-5]
                 break
+        
         dic = json.loads(message)
         return dic
 
     @staticmethod
-    def send_message(client, dic):
+    def send_message(tcp, dic):
         message = json.dumps(dic) + "<EOF>"
-        client.send(bytearray(message, 'UTF-8'))
+        tcp.client.send(bytearray(message, 'UTF-8'))
+        
+
 
 
 class TCPConnection:
@@ -39,6 +43,7 @@ class TCPConnection:
         self.server.bind(('localhost', port))
         self.server.listen()
         (self.client, address) = self.server.accept()
+        self.mutex = Lock()
 
     def get_client(self):
         return self.client

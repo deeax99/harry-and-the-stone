@@ -4,38 +4,31 @@ using UnityEngine;
 
 public class GameLoop : MonoBehaviour
 {
+    
+    [SerializeField] private AgentsManager agentsManager;
 
     private int frame = 1;
-    private void Start()
+    public void InitLoop()
     {
-        AgentsManager.instance.AgentStart();
+        agentsManager.AgentStart();
     }
-    private void Update()
+    public EnvironmentState UpdateLoop(EnviornmentAction action)
     {
-        GetAndApplyAction();
-        SendAction();
-    }
-    void GetAndApplyAction()
-    {
-        var action = MLCommunication.GetAction();
         if (action.done)
         {
             frame = 1;
-            AgentsManager.instance.ResetGame();
+            agentsManager.ResetGame();
         }
         else
         {
             frame++;
-            AgentsManager.instance.ApplyAction(action, frame);
+            agentsManager.ApplyAction(action, frame);
         }
         Physics2D.Simulate(1 / 60f);
-    }
-    void SendAction()
-    {
-        MLCommunication.SendAction(GetEnviromantState());
+        return GetEnviromantState();
     }
     EnvironmentState GetEnviromantState()
     {
-        return AgentsManager.instance.GetEnviromantState(frame);
+        return agentsManager.GetEnviromantState(frame);
     }
 }

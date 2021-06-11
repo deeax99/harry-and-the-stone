@@ -28,7 +28,7 @@ public class AgentObserver
         }
         else if (VisionTest())
         {
-            UpdateValues(agnetState, observer.position, frame);
+            UpdateValues(agnetState, observer.localPosition, frame);
         }
     }
     void UpdateValues(object[] agnetState, Vector2 position , int frame)

@@ -4,53 +4,42 @@ using System.Text;
 public class TCPCommunication
 {
     const string SERVER = "localhost";
-    const int PORT = 7979;
 
-    private static TcpClient client;
-    private static NetworkStream networkStream;
+    private TcpClient client;
+    private NetworkStream networkStream;
 
-    public static int GetPort()
-    {
-        string[] args = System.Environment.GetCommandLineArgs();
-        for (int i = 0; i < args.Length; i++)
-        {
-            if (args[i] == "--p")
-            {
-                return int.Parse(args[i + 1]);
-            }
-        }
-        return PORT;
-    }
-
-    public static void InitializationClient()
+    public void InitializationClient(int port)
     {
         client = new TcpClient();
-        client.Connect(SERVER, GetPort());
+        client.Connect(SERVER, port);
         networkStream = client.GetStream();
     }
     
-    public static void SendData(string json)
+    public void SendData(string json)
     {
         byte[] writeBuffer = Encoding.UTF8.GetBytes(json + "<EOF>");
         networkStream.Write(writeBuffer, 0, writeBuffer.Length);
     }
-    public static string ReciveData()
+    public string ReciveData()
     {
         StringBuilder stringBuilder = new StringBuilder();
         byte[] readBuffer = new byte[1024];
-        int counter = 0;
+        int counter = -1;
+#if UNITY_EDITOR
+        counter = 100000;
+#endif
         do
         {
             int count = networkStream.Read(readBuffer, 0, 1024);
             string recivedMessage = Encoding.UTF8.GetString(readBuffer, 0, count);
             stringBuilder.Append(recivedMessage);
-            counter++;
+            counter--;
         }
-        while (!IsEndOfFile(stringBuilder) && counter < 10000); // <EOF>
+        while (!IsEndOfFile(stringBuilder) && counter == 0); // <EOF>
         stringBuilder.Remove(stringBuilder.Length - 5, 5);
         return stringBuilder.ToString();
     }
-    public static bool IsEndOfFile(StringBuilder stringBuilder)
+    public bool IsEndOfFile(StringBuilder stringBuilder)
     {
         string EOF = "<EOF>";
 
