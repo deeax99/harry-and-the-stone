@@ -23,11 +23,11 @@ os.environ['TF_XLA_FLAGS'] = '--tf_xla_enable_xla_devices'
 
 DEBUG = False
 
-optimizer = tf.keras.optimizers.Adam(learning_rate=5e-4)
+optimizer = tf.keras.optimizers.Adam(learning_rate=1e-3)
 huber_loss = tf.keras.losses.Huber(reduction=tf.keras.losses.Reduction.SUM)
 
 num_hidden_units = 512
-
+binary_hidden_units = 256
 
 class Actor(tf.keras.Model):
     def __init__(self, num_actions: int):
@@ -40,6 +40,11 @@ class Actor(tf.keras.Model):
         x = self.common(inputs)
         return self.actor(x)
 
+    def actor_predict(self,inputs):
+        actions_probility = self.call(inputs)
+        action_probility_logits = tf.nn.softmax(actions_probility)
+        actions = tf.random.categorical(actions_probility,1,dtype=tf.int32)
+        return actions[0,0].numpy(),action_probility_logits[0,actions[0,0]]
 
 class Critic(tf.keras.Model):
     def __init__(self):
@@ -52,80 +57,40 @@ class Critic(tf.keras.Model):
         x = self.common(inputs)
         return self.critic(x)
 
-
 class ActorCritic():
-    def __init__(self, num_actions, actor_input_size, critic_input_size, instance_count, actions_partition):
+
+    def __init__(self, num_actions):
 
         self.actor_model = Actor(num_actions)
         self.critic_model = Critic()
-
-        actor_input_shape = [0.0] * actor_input_size
-        critic_input_shape = [0.0] * critic_input_size
-
-        self.actor_model(tf.expand_dims(actor_input_shape, 0))
-        self.critic_model(tf.expand_dims(critic_input_shape, 0))
-
-        self.actions_partition = actions_partition
-        self.instance_count = instance_count
-
         self.clear()
-    def save (self,actor_name):
+
+    def save(self, actor_name):
         letters = string.ascii_lowercase
         result_str = ''.join(random.choice(letters) for i in range(12))
-        self.actor_model.save("Model/{}/ActorModel/{}".format(actor_name,result_str))
-        self.critic_model.save("Model/{}/CriticModel/{}".format(actor_name,result_str))
+        self.actor_model.save(
+            "Model/{}/ActorModel/{}".format(result_str, actor_name))
+        self.critic_model.save(
+            "Model/{}/CriticModel/{}".format(result_str, actor_name))
 
-
-    def predict(self, actor_states, fully_states, instances_id, debug=False):
+    def predict(self, actor_state, fully_state, debug=False):
         with self.actor_tape, self.critic_tape:
 
-            actor_states = tf.expand_dims(actor_states, 0)
-            fully_states = tf.expand_dims(fully_states, 0)
+            actor_state = tf.expand_dims(actor_state, 0)
+            fully_state = tf.expand_dims(fully_state, 0)
 
-            batch_count = len(instances_id)
+            action, act_prob = self.actor_model.actor_predict(actor_state)
+            expected_reward = self.critic_model(fully_state)[0]
 
-            if batch_count == 0:
-                return []
+            self.actor_predict.append(act_prob)
+            self.critic_predict.append(expected_reward)
 
-            actions = [[] for i in range(batch_count)]
+            return action
 
-            probility_products = []
-
-            actors_predicts = self.actor_model(actor_states)[0]
-            critic_predicts = tf.convert_to_tensor(
-                self.critic_model(fully_states))[0]
-            for i in range(batch_count):
-
-                partition_index = 0
-                probility_product = tf.convert_to_tensor(1.0)
-
-                for partition_size in self.actions_partition:
-
-                    action_probility = actors_predicts[i][partition_index:partition_index+partition_size]
-                    action_probility_logits = tf.nn.softmax(action_probility)
-
-                    action_index = (tf.random.categorical(
-                        [action_probility], 1).numpy()[0, 0])
-
-                    actions[i].append(action_index)
-                    probility_product = probility_product * \
-                        action_probility_logits[action_index]
-
-                    partition_index += partition_size
-
-                probility_products.append(probility_product)
-
-            for i in range(batch_count):
-                instance_id = instances_id[i]
-                self.critic_predicts[instance_id].append(critic_predicts[i, 0])
-                self.actor_predicts[instance_id].append(probility_products[i])
-
-        return actions
-
-    def apply_loss(self, rewards):
+    def apply_loss(self, reward):
 
         with self.actor_tape, self.critic_tape:
-            actor_loss, critic_loss = self.compute_loss(rewards)
+            actor_loss, critic_loss = self.compute_loss(reward)
 
         grads_actor, grads_critic = self.compute_gradient(
             actor_loss, critic_loss)
@@ -147,36 +112,20 @@ class ActorCritic():
 
         return grads_actor, grads_critic
 
-    def compute_loss(self, instance_reward):
+    def compute_loss(self, reward):
+        self.actor_predict = tf.convert_to_tensor(self.actor_predict)
+        self.critic_predict = tf.convert_to_tensor(self.critic_predict)
 
-        actor_loss = []
-        critic_loss = []
+        reward = tf.convert_to_tensor(reward)
+        expected_rewards = self.get_expected_return(reward)
+        actions_log = self.actions_log_compute(self.actor_predict)
+        advantage = self.advantage_compute(
+            self.critic_predict, expected_rewards)
 
-        for i in range(len(instance_reward)):
-            rewards = instance_reward[i]
-
-            expected_rewards = self.get_expected_return(rewards)
-
-            advantage = self.advantage_compute(
-                self.critic_predicts[i], expected_rewards)
-
-            actions_log = self.actions_log_compute(self.actor_predicts[i])
-            actor_loss.append(-tf.reduce_sum(actions_log * advantage))
-
-            critic_loss.append(huber_loss(
-                self.critic_predicts[i], expected_rewards))
+        actor_loss = -tf.reduce_sum(actions_log * advantage)
+        critic_loss = huber_loss(self.critic_predict, expected_rewards)
 
         return actor_loss, critic_loss
-
-    def get_expected_rewards(self, reward):
-        exp_reward = []
-        reward_sum = sum(reward)
-
-        for i in range(len(reward)):
-            exp_reward.append(reward_sum)
-            reward_sum -= reward[i]
-
-        return exp_reward
 
     def get_expected_return(self, rewards: tf.Tensor, gamma: float = .99, standardize: bool = True) -> tf.Tensor:
         """Compute expected returns per timestep."""
@@ -204,12 +153,7 @@ class ActorCritic():
         return returns
 
     def advantage_compute(self, values, rewards):
-        advantage = []
-        framecount = len(values)
-        for i in range(framecount):
-            advantage.append(rewards[i] - values[i])
-
-        return advantage
+        return rewards - values
 
     def actions_log_compute(self, actions):
         return tf.math.log(actions)
@@ -220,14 +164,13 @@ class ActorCritic():
     def clear(self):
         self.actor_tape = tf.GradientTape()
         self.critic_tape = tf.GradientTape()
-        with self.actor_tape:
-            with self.critic_tape:
-                self.actor_predicts = [[] for i in range(self.instance_count)]
-                self.critic_predicts = [[] for i in range(self.instance_count)]
+        with self.actor_tape,self.critic_tape:
+            self.actor_predict = []
+            self.critic_predict = []
 
 
 class InstanceInfo():
-    def __init__(self, env, instance_id):
+    def __init__(self, env:Unity, instance_id):
         self.instance_id = instance_id
         self.env = env
         self.reset()
@@ -247,51 +190,35 @@ class InstanceInfo():
 
 
 class Worker():
-    def __init__(self, unity_instance , unity_count, port=7979, is_subprocess=True):
-        
-        instance_count = unity_instance * unity_count
-        
-        self.unity_count = unity_count 
-        self.unity_instance = unity_instance
+    def __init__(self, env, is_subprocess=True,worker_id = 0):
+        self.instance = InstanceInfo(env, worker_id)
 
-        self.envs = []
-        self.instance_count = instance_count
-        self.create_subprocess(unity_instance , unity_count, port, is_subprocess)
-        self.instances_info = [InstanceInfo(
-            self.envs[i], i) for i in range(instance_count)]
+        self.harry_a2c = ActorCritic(6)
+        self.first_thieve_a2c = ActorCritic(8)
+        self.second_thieve_a2c = ActorCritic(8)
 
-        self.harry_a2c = ActorCritic(6, 15, 13, instance_count, [3, 3])
+    def create_subprocess(self, port, is_subprocess , instance_count , continer_id = 0):
+        if is_subprocess:
+            app_name = 'harry_game_with_renderer' if i == 0 else 'harry_game_server'
+            args = [app_name + "/HarryAndTheStone.exe",'--p', str(port),'--c',str(unity_count)]
+            self.subprocess = subprocess.Popen(
+                args, stdout=subprocess.DEVNULL)
+            print("process {}:{} opened".format(port,continer_id))
 
-        self.first_thieve_a2c = ActorCritic(
-            8, 14, 13, instance_count, [3, 3, 2])
-        self.second_thieve_a2c = ActorCritic(
-            8, 14, 13, instance_count, [3, 3, 2])
+        tcp = TCPConnection(port)
+        return Unity(port,tcp_connection=tcp,continer_id = continer_id)
 
-    def create_subprocess(self, unity_instance , unity_count, port, is_subprocess):
-        for i in range(unity_instance):
-            if is_subprocess:
-                app_name = 'harry_game_with_renderer' if i == 0 else 'harry_game_server'
-                args = [app_name + "/HarryAndTheStone.exe",'--p', str(port + i),'--c',str(unity_count)]
-                self.subprocess = subprocess.Popen(
-                    args, stdout=subprocess.DEVNULL)
-                print("process {} opened".format(i + 1))
-
-            tcp = TCPConnection(port + i)
-            for j in range(unity_count):
-                self.envs.append(Unity(port + i,tcp_connection=tcp,continer_id=j))
-
-    def apply_harry(self, env, actions, env_actions):
-        x = int(actions[0]) - 1
-        y = int(actions[1]) - 1
+    def apply_harry(self, env, action, env_actions):
+        x = (int(action) & 1) - 1
+        y = (int(action) & 2) - 1
 
         env.apply_harry_action(env_actions, x, y)
 
-    def apply_thieve(self, env, actions, env_actions, thieve_id):
+    def apply_thieve(self, env, action, env_actions, thieve_id):
 
-        x = int(actions[0]) - 1
-        y = int(actions[1]) - 1
-
-        grab = int(actions[2])
+        x = (int(action) & 1) - 1
+        y = (int(action) & 2) - 1
+        grab = (int(action) & 4)
 
         if thieve_id == 0:
             env.apply_first_thieve_action(env_actions, x, y, grab)
@@ -299,193 +226,53 @@ class Worker():
             env.apply_second_thieve_action(env_actions, x, y, grab)
 
     def run_episode(self):
+        self.instance.reset()
+        while (True):
+            env_actions = {}
+            full_state, hr_state, ft_state, st_state = self.instance.state
+            
+            hr_action = self.harry_a2c.predict(hr_state,full_state)
+            self.apply_harry(self.instance.env, hr_action, env_actions)
 
-        remining_instance = self.instance_count
+            if not self.instance.first_thieve_done:
+                ft_action = self.first_thieve_a2c.predict(ft_state,full_state)            
+                self.apply_thieve(self.instance.env, ft_action, env_actions,0)
 
-        for i in range(remining_instance):
-            self.instances_info[i].reset()
-        if DEBUG:
-            print("start eps")
-        iteration = 0
-        while(remining_instance != 0):
-            remining_instance = 0
-            for i in range(self.instance_count):
-                if not self.instances_info[i].done:
-                     remining_instance+=1
+            if not self.instance.second_thieve_done:
+                st_action = self.second_thieve_a2c.predict(st_state,full_state)   
+                self.apply_thieve(self.instance.env, st_action, env_actions,1)
 
-            if remining_instance == 0:
+            state, rewards, done = self.instance.env.action(env_actions)
+
+            self.instance.state = state
+
+            self.instance.harry_reward.append(rewards[0])
+            
+            if not self.instance.first_thieve_done:
+                self.instance.first_thieve.append(rewards[1])
+
+            if not self.instance.second_thieve_done:
+                self.instance.second_thieve.append(rewards[2])
+
+            if done[0]:
                 break
-
-            fully_state = []
-            harry_states = []
-
-            first_thieve_states = []
-            second_thieve_states = []
-
-            instances_id_harry = []
-            instances_id_first_thieve = []
-            instances_id_second_thieve = []
-
-            for instance_info in self.instances_info:
-                if not instance_info.done:
-
-                    full_state, harry_state, fir_thieve_state, sec_thieve_state = instance_info.state
-
-                    fully_state.append(full_state)
-
-                    harry_states.append(harry_state)
-                    instances_id_harry.append(instance_info.instance_id)
-
-                    if not instance_info.first_thieve_done:
-                        first_thieve_states.append(fir_thieve_state)
-                        instances_id_first_thieve.append(
-                            instance_info.instance_id)
-
-                    if not instance_info.second_thieve_done:
-                        second_thieve_states.append(fir_thieve_state)
-                        instances_id_second_thieve.append(
-                            instance_info.instance_id)
             
-            if DEBUG:
-                print("get states")
+            if done[1]:
+                self.instance.first_thieve_done = True
 
-            def harry_thread():
-                self.harry_actions = self.harry_a2c.predict(
-                    harry_states, fully_state, instances_id_harry)
+            if done[2]:
+                self.instance.second_thieve_done = True
 
-            def ft_thread():
-                self.first_thieve_actions = self.first_thieve_a2c.predict(
-                    first_thieve_states, fully_state, instances_id_first_thieve)
-            def st_thread():
-                self.second_thieve_actions = self.second_thieve_a2c.predict(
-                    second_thieve_states, fully_state, instances_id_second_thieve)
-            
-            h_thread = threading.Thread(target=harry_thread)
-            ft_thread = threading.Thread(target=ft_thread)
-            st_thread = threading.Thread(target=st_thread)
-
-            h_thread.start()
-            ft_thread.start()
-            st_thread.start()
-
-            h_thread.join()
-            ft_thread.join()
-            st_thread.join()
-
-            if DEBUG:
-                print("get actions")
-
-            ft_index = 0
-            st_index = 0
-            envs_actions = []
-            for i in range(remining_instance):
-                instance = instances_id_harry[i]
-
-                env_actions = {}
-                env = self.envs[instance]
-
-                self.apply_harry(env, self.harry_actions[i], env_actions)
-
-                if not self.instances_info[instance].first_thieve_done:
-                    self.apply_thieve(
-                        env, self.first_thieve_actions[ft_index], env_actions, 0)
-                    ft_index += 1
-
-                if not self.instances_info[instance].second_thieve_done:
-                    self.apply_thieve(
-                        env, self.second_thieve_actions[st_index], env_actions, 1)
-                    st_index += 1
-
-                envs_actions.append(env_actions)
-            
-            def insert(i):   
-                instance = instances_id_harry[i]
-                env_actions = envs_actions[i]
-                env = self.envs[instance]
-
-                state, rewards, done = env.action(env_actions)
-                self.instances_info[instance].harry_reward.append(rewards[0])
-
-                if not self.instances_info[instance].first_thieve_done:
-                    self.instances_info[instance].first_thieve.append(
-                        rewards[1])
-
-                if not self.instances_info[instance].second_thieve_done:
-                    self.instances_info[instance].second_thieve.append(
-                        rewards[2])
-
-                if done[0]:
-                    self.instances_info[instance].done = True
-                    if DEBUG:
-                        print("instance {} done".format(instance))
-
-                if done[1]:
-                    self.instances_info[instance].first_thieve_done = True
-
-                if done[2]:
-                    self.instances_info[instance].second_thieve_done = True
-                
-                
-
-            threads = [threading.Thread(target=insert,args=(i,)) for i in range(remining_instance)]
-            for thread in threads:
-                thread.start()
-
-            for thread in threads:
-                thread.join()
-
-            del threads
-            if DEBUG:
-                print("action applied {}".format(iteration))
-            iteration += 1
-
-
-    def train(self, max_ep):
+    def train(self, iteration_count):
         print("Strat Tranning")
-        batch_index = 0
-        for i in range(max_ep):
+        t = time.time()
+        for i in range(iteration_count):
             self.run_episode()
+            self.harry_a2c.apply_loss(self.instance.harry_reward)
+            self.first_thieve_a2c.apply_loss(self.instance.first_thieve)
+            self.second_thieve_a2c.apply_loss(self.instance.second_thieve)
+            print("it {} = {}".format(i,time.time() - t))
 
-            harry_rewards = []
-            ft_rewards = []
-            st_rewards = []
-
-            #harry_sum = sum(harry_rewards[0]) / len(harry_rewards[0])
-            #ft_rewards = sum(ft_rewards[0]) / len(ft_rewards[0])
-            #st_rewards = sum(st_rewards[0]) / len(harry_rewards[0])
-
-
-            for info in self.instances_info:
-                harry_rewards.append(info.harry_reward)
-                ft_rewards.append(info.first_thieve)
-                st_rewards.append(info.second_thieve)
-            
-            if DEBUG:
-                print("start apply loss")
-
-            harry_loss = threading.Thread(target=self.harry_a2c.apply_loss,args=(harry_rewards,))
-            ft_loss = threading.Thread(target=self.first_thieve_a2c.apply_loss,args=(ft_rewards,))
-            st_loss = threading.Thread(target=self.second_thieve_a2c.apply_loss,args=(st_rewards,))
-            
-            harry_loss.start()
-            ft_loss.start()
-            st_loss.start()
-
-            harry_loss.join()
-            ft_loss.join()
-            st_loss.join()
-            
-            print(str(batch_index) + " : " +
-                  str(batch_index + self.instance_count))
-                  
-            print("Harry reward")
-            batch_index += self.instance_count
-            
-            if (i+1) % 100 == 0 :
-                self.harry_a2c.save("Harry")
-                self.first_thieve_a2c.save("FirstThieve")
-                self.second_thieve_a2c.save("SecondThieve")
-                
         self.close()
 
     def close(self):
@@ -495,11 +282,44 @@ class Worker():
 
 #tf.random.set_seed(seed)
 #np.random.seed(seed)
+def test():
+
+    a = Actor(8)
+    #a_s = [1.4,3,5,5,34,3,1,23,3,3,2,2,2]
+    #a.actor_predict(a_s)
+    a_s =  [(j+3)/(j + 1) for j in range(16)] 
+    a_s = tf.expand_dims(a_s,0)
+    t = time.time()
+    with tf.GradientTape() as tape:
+        loss = tf.constant(0.0)
+        print("Start")
+        for i in range(1050):
+            x = a.actor_predict(a_s)
+            loss += tf.reduce_sum(x[1])
+            print(i,time.time() - t)
+        print("End")
+    #grad = tape.gradient(x,a.trainable_variables)
+    #print(grad)
+    #print(x)
+
+def open_unity(port=7979,visual = True):
+    app_name = 'harry_game_with_renderer' if visual else 'harry_game_server'
+    args = [app_name + "/HarryAndTheStone.exe",'--p', str(port),'--c',str(1)]
+    subprocess.Popen(args, stdout=subprocess.DEVNULL)
+    print("process {} opened".format(port))
+    tcp = TCPConnection(port)
+    return Unity(port,tcp_connection=tcp,continer_id = 0)
+
+
+def start_worker(port=7979):
+    env = open_unity(port=port, visual=False)
+    worker = Worker(env, is_subprocess=True)
+    worker.train(10000)
 
 
 def main():
-    worker = Worker(unity_instance=6,unity_count=5, port=7979, is_subprocess=True)
-    worker.train(10000)
+      start_worker()      
 
 if __name__ == "__main__":
-    main()
+    with tf.device("/cpu:0"):
+        main()
