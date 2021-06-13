@@ -23,7 +23,7 @@ os.environ['TF_XLA_FLAGS'] = '--tf_xla_enable_xla_devices'
 
 DEBUG = False
 
-optimizer = tf.keras.optimizers.Adam(learning_rate=3e-5)
+optimizer = tf.keras.optimizers.Adam(learning_rate=3e-3)
 huber_loss = tf.keras.losses.Huber(reduction=tf.keras.losses.Reduction.SUM)
 
 num_hidden_units = 64
@@ -32,10 +32,10 @@ class Actor(tf.keras.Model):
     def __init__(self, num_actions: int):
         super().__init__()
 
-        self.layer1 = layers.Dense(num_hidden_units, activation="relu")
-        self.layer2 = layers.Dense(num_hidden_units, activation="relu")
-        self.layer3 = layers.Dense(num_hidden_units, activation="relu")
-        self.actor = layers.Dense(num_actions)
+        self.layer1 = layers.Dense(num_hidden_units, activation="sigmoid")
+        self.layer2 = layers.Dense(num_hidden_units, activation="sigmoid")
+        self.layer3 = layers.Dense(num_hidden_units, activation="sigmoid")
+        self.actor = layers.Dense(num_actions, activation="sigmoid")
 
     def call(self, inputs):
         x = self.layer1(inputs)
@@ -335,8 +335,8 @@ def start_worker(port=7979):
     env = open_unity(port=port, visual=True)
     worker = Worker(env, is_subprocess=True)
     worker.train(10000)
-
-seed = 19
+seed = 59
+#seed = 19
 tf.random.set_seed(seed)
 np.random.seed(seed)
 
