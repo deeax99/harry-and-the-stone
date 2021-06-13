@@ -5,9 +5,13 @@ from unity import Unity
 from matplotlib import pyplot as plt
 from tensorflow.keras import layers
 from typing import Any, List, Sequence, Tuple
+import subprocess
 
 
 # Create the environment
+app_name = '../Environment/Single_Agent/HarryAndTheStone.exe' 
+args = [app_name ]
+subprocess.Popen(args, stdout=subprocess.DEVNULL)
 env = Unity()
 
 # Set seed for experiment reproducibility
@@ -158,7 +162,7 @@ def compute_loss(
   return actor_loss + critic_loss
 
 
-optimizer = tf.keras.optimizers.Adam(learning_rate=0.005)
+optimizer = tf.keras.optimizers.Adam(learning_rate=5e-3)
 
 
 def train_step(

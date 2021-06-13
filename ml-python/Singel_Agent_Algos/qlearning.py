@@ -4,6 +4,7 @@ from time import sleep
 import matplotlib.pyplot as plt
 import numpy as np
 import os 
+import subprocess
 class QLearn:
     total_state = 0 
     unique_state = 0
@@ -85,7 +86,10 @@ trajectorys = []
 firstEnter = False
 #factor = .9/]/]]/
 
-os.startfile("unity_Build\HarryAndTheStone.exe")
+app_name = '../Environment/Single_Agent/HarryAndTheStone.exe' 
+args = [app_name ]
+subprocess.Popen(args, stdout=subprocess.DEVNULL)
+
 env =Unity()
 all_reward = []
 current_reward=0
