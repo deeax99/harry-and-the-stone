@@ -15,42 +15,45 @@ num_actions = 4
 num_hidden = 128
 gamma=0.99
 opt = keras.optimizers.Adam(learning_rate=0.01)
+app_name = 'Environment/HarryAndTheStone.exe' 
+args = [app_name ]
+subprocess.Popen(args, stdout=subprocess.DEVNULL)
+unity = Unity()
+
 class Model(tf.keras.Model):
   
   def __init__(self):
     super().__init__()
-    self.d1 = tf.keras.layers.Dense(30,activation='relu')
-    self.d2 = tf.keras.layers.Dense(30,activation='relu')
+    self.layer1 = tf.keras.layers.Dense(30,activation='relu')
+    self.layer2 = tf.keras.layers.Dense(30,activation='relu')
     self.out = tf.keras.layers.Dense(num_actions,activation='softmax')
 
   def call(self, input_data):
-    x = tf.convert_to_tensor(input_data)
-    x = self.d1(x)
-    x = self.d2(x)
-    x = self.out(x)
-    return x
-
+    layer_Output = tf.convert_to_tensor(input_data)
+    layer_Output = self.layer1(layer_Output)
+    layer_Output = self.layer2(layer_Output)
+    layer_Output = self.out(layer_Output)
+    return layer_Output
 
 model = Model()
 
-
-def act(state):
+def Chose_Action(state):
   prob = model(np.array([state]))
   dist = tfp.distributions.Categorical(probs=prob, dtype=tf.float32)
-  
   action = dist.sample()
-  
   return int(action.numpy()[0])
-
   
 def train(states, rewards, actions):
   sum_reward = 0
   discnt_rewards = []
   rewards.reverse()
+
   for r in rewards:
     sum_reward = r + gamma*sum_reward
     discnt_rewards.append(sum_reward)
-  discnt_rewards.reverse()  
+
+
+  discnt_rewards.reverse()
 
   for state, reward, action in zip(states, discnt_rewards, actions):
     with tf.GradientTape() as tape:
@@ -68,18 +71,9 @@ def a_loss(prob, action, reward):
   loss = -log_prob*reward
   return loss 
 
-app_name = 'Environment/HarryAndTheStone.exe' 
-args = [app_name ]
-subprocess.Popen(args, stdout=subprocess.DEVNULL)
-unity = Unity()
-
-
-
-steps = 10000
 all_ep_reward=[]
 ep=0
 while(True):
-  
   done = False
   state = unity.reset()
   total_reward = 0
@@ -87,9 +81,9 @@ while(True):
   states = []
   actions = []
   while not done:
-    #env.render()
-    action =act(state)
-    #print(action)
+    
+    action =Chose_Action(state)
+    
     next_state,reward,done= unity.action(action)
     
     rewards.append(reward)
