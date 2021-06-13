@@ -8,6 +8,7 @@ from tensorflow.keras import layers
 from unity import Unity
 import tensorflow_probability as tfp
 import matplotlib.pyplot as plt
+import subprocess
 
 num_inputs = 4
 num_actions = 4
@@ -36,9 +37,9 @@ model = Model()
 def act(state):
   prob = model(np.array([state]))
   dist = tfp.distributions.Categorical(probs=prob, dtype=tf.float32)
-  #print(dist)
+  
   action = dist.sample()
-  print(action)
+  
   return int(action.numpy()[0])
 
   
@@ -67,8 +68,12 @@ def a_loss(prob, action, reward):
   loss = -log_prob*reward
   return loss 
 
-
+app_name = '../Environment/Single_Agent/HarryAndTheStone.exe' 
+args = [app_name ]
+#subprocess.Popen(args, stdout=subprocess.DEVNULL)
 unity = Unity()
+
+
 
 steps = 10000
 all_ep_reward=[]
