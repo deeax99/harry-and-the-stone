@@ -5,6 +5,27 @@ import matplotlib.pyplot as plt
 import numpy as np
 import os 
 import subprocess
+import math
+
+actions = ["left" , "right" , "up" , "down" ]
+
+
+episode_reward = 0
+trajectorys = []
+
+
+app_name = 'Environment/HarryAndTheStone.exe'
+args = [app_name ]
+subprocess.Popen(args, stdout=subprocess.DEVNULL)
+
+env =Unity()
+all_reward = []
+current_reward=0
+done=False
+ep=0
+all_ep_r = []
+
+
 class QLearn:
     total_state = 0 
     unique_state = 0
@@ -52,60 +73,29 @@ class QLearn:
             action =i
         return action
 
-    def learn_2 (self , trajectorys  , cumulative_reward):
+    def learn_2 (self , trajectorys  , episode_reward):
         for trajectory in trajectorys:
             state = (trajectory["state"] , trajectory["action"])
             if self.q.get(state , None) != None:
-                self.q[state] =  max(self.q[state] , cumulative_reward)
+                self.q[state] =  max(self.q[state] , episode_reward)
             else :
-                self.q[state] = cumulative_reward
+                self.q[state] = episode_reward
 
-            cumulative_reward -= trajectory["reward"]
+            episode_reward -= trajectory["reward"]
             
 
     def learn(self, state1, action1, reward, state2):
         maxqnew = max([self.retrieve_Q(state2, a) for a in self.actions])
         self.learn_Q(state1, action1, reward, reward + self.gamma*maxqnew)
 
-
-
-import math
-def ff(f,n):
-    fs = "{:f}".format(f)
-    if len(fs) < n:
-        return ("{:"+n+"s}").format(fs)
-    else:
-        return fs[:n]
-
-
-actions = ["left" , "right" , "up" , "down" ]
-
 q_model = QLearn(actions) 
-cumulative_reward = 0
-trajectorys = []
-firstEnter = False
-#factor = .9/]/]]/
-
-app_name = 'Environment/HarryAndTheStone.exe' 
-args = [app_name ]
-subprocess.Popen(args, stdout=subprocess.DEVNULL)
-
-env =Unity()
-all_reward = []
-current_reward=0
-done=False
-ep=0
-all_ep_r = []
-
 while (True):
-    cumulative_reward=0
+    episode_reward=0
     state = env.reset()
     done=False
     if done == True :
-        q_model.learn_2(trajectorys , cumulative_reward)
-        firstEnter = False
-        
-        all_reward.append(cumulative_reward)     
+        q_model.learn_2(trajectorys , episode_reward)
+        all_reward.append(episode_reward)     
     
     else :
         while(True):
@@ -115,14 +105,14 @@ while (True):
             state,current_reward , done =env.action(action)
             
             trajectory = {}
-        
+
             trajectory["state"] = state
             trajectory["action"] = action
             trajectory["reward"] = current_reward
 
             trajectorys.append(trajectory)
 
-            cumulative_reward += current_reward
+            episode_reward += current_reward
             
             if done :
                 break ;
@@ -130,9 +120,9 @@ while (True):
             
         trajectorys[-1]["reward"] = current_reward
         ep+=1
-        all_ep_r.append(cumulative_reward)
-        print('Ep: %i' % ep,"|Ep_r: %i" % cumulative_reward)
-
+        all_ep_r.append(episode_reward)
+        
+        print('Ep: %i' % ep,"|Ep_r: %i" % episode_reward)
         if ep %10000 ==0:
             plt.plot(np.arange(ep),all_ep_r , color='green')
             plt.xlabel('Episode')

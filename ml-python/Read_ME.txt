@@ -9,15 +9,15 @@ contain the 3 Python implementation for 3 differnt algorithms and there unity co
 
  
 2.1)Q_Lerning.py 
-have the implementation of the Q_Lerning in a singel agent Environment 
+open the Q_Lerning.py and simply run it the unity Environment will run automatically
  
 
 2.2)Poilcy_Gradient.py 
-have the implementation of the Poilcy_Gradient in a singel agent Environment
+open the Poilcy_Gradient.py and simply run it the unity Environment will run automatically
 
 
-2.3) Actor_Critc_Singel_Agent
-have the implementation of the Actor_Critc in a singel agent Environment
+2.3) Actor_Critc
+open the Actor_Critc.py and simply run it the unity Environment will run automatically
 
 
 2.4) unity.py 
@@ -29,7 +29,7 @@ contain the Python implementation of the Multi_Agent_Actor_Critc algorithm and i
 
 
 3.1)Harry_And_Thieves_A2c 
-have the implementation of the Actor_Critc in the multi_agent Environment
+you simply need to run the code and the Environment will run automatically
 
 3.2) unity.py 
 have the implementation of the TCP coneciton betwen python and and Multi_Agent_Unity_Environment 
