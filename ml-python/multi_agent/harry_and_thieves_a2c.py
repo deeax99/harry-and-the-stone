@@ -23,7 +23,9 @@ os.environ['TF_XLA_FLAGS'] = '--tf_xla_enable_xla_devices'
 
 DEBUG = False
 
-optimizer = tf.keras.optimizers.Adam(learning_rate=3e-3)
+optimizer_actor = tf.keras.optimizers.Adam(learning_rate=3e-3)
+optimizer_critic = tf.keras.optimizers.Adam(learning_rate=5e-4)
+
 huber_loss = tf.keras.losses.Huber(reduction=tf.keras.losses.Reduction.SUM)
 
 num_hidden_units = 64
@@ -104,10 +106,10 @@ class ActorCritic():
         grads_actor, grads_critic = self.compute_gradient(
             actor_loss, critic_loss)
 
-        optimizer.apply_gradients((grad, var) for (grad, var) in zip(
+        optimizer_actor.apply_gradients((grad, var) for (grad, var) in zip(
             grads_actor, self.actor_model.trainable_variables) if grad is not None)
 
-        optimizer.apply_gradients((grad, var) for (grad, var) in zip(
+        optimizer_critic.apply_gradients((grad, var) for (grad, var) in zip(
             grads_critic, self.critic_model.trainable_variables) if grad is not None)
 
         """
