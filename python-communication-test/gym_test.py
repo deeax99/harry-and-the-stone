@@ -11,7 +11,6 @@ seed = 42
 gamma = 1  # Discount factor for past rewards
 max_steps_per_episode = 10000
 eps = np.finfo(np.float32).eps.item()  # Smallest number such that 1.0 + eps != 1.0
-
 num_inputs = 4
 num_actions = 4
 num_hidden = 32768
@@ -37,6 +36,8 @@ unity = Unity()
 
 
 while (True):
+    
+
 
     state = unity.reset()
     

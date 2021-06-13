@@ -1,9 +1,18 @@
-message = "Hello world!"
-import socket
+from unity import Unity
+env = Unity()
 
-HOST = '127.0.0.1'  # The server's hostname or IP address
-PORT = 4848        # The port used by the server
+limited = 0
+while (True):
+    print("start state", env.reset())
+    while (True):
+        action = {}
 
-client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-client.connect((HOST, PORT))
-client.sendall(b'Hello, world')
+        Unity.apply_second_thieve_action(action, 1, 0, 1)
+        if (limited % 1000 == 0):
+            print("test")
+        limited += 1
+        state, rewards, dones = env.action(action)
+        if dones[0]:
+            print(dones , rewards)
+            env.reset()
+            limited = 0
