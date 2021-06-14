@@ -33,8 +33,8 @@ class QLearn:
     def __init__(self,actions, epsilon=.1, alpha=0.6, gamma=0.7):
         self.q = {}
         self.qvis = {}
-        self.epsilon = epsilon  # exploration constant
-        self.alpha = alpha      # discount constant
+        self.epsilon = epsilon  
+        self.alpha = alpha      
         self.gamma = gamma
         self.actions=actions
 
@@ -52,14 +52,19 @@ class QLearn:
 
     def choose_action(self, state):
         self.total_state += 1
+
         if self.qvis.get(state , None) == None:
             self.unique_state += 1
             self.qvis[state] = 1
+
         else :
             self.qvis[state] += 1
         rand = random.random()
+
         if  rand < self.epsilon or (self.total_state / self.unique_state) > self.qvis[state]:
             action = random.randint(0, 3)
+
+
         else:
             q = [self.retrieve_Q(state, a) for a in self.actions]
             maxQ = max(q)
@@ -67,10 +72,14 @@ class QLearn:
             if count > 1:
                 best = [i for i in range(len(self.actions)) if q[i] == maxQ]
                 i = random.choice(best)
+
+
             else:
                 i = q.index(maxQ)
 
             action =i
+
+
         return action
 
     def learn_2 (self , trajectorys  , episode_reward):
@@ -89,6 +98,8 @@ class QLearn:
         self.learn_Q(state1, action1, reward, reward + self.gamma*maxqnew)
 
 q_model = QLearn(actions) 
+
+
 while (True):
     episode_reward=0
     state = env.reset()

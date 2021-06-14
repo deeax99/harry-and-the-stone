@@ -18,6 +18,7 @@ import time
 from tcp import TCPUitility
 from tcp import TCPConnection
 import string
+from tensorflow import keras
 
 os.environ['TF_XLA_FLAGS'] = '--tf_xla_enable_xla_devices'
 
@@ -31,13 +32,16 @@ huber_loss = tf.keras.losses.Huber(reduction=tf.keras.losses.Reduction.SUM)
 num_hidden_units = 64
 
 class Actor(tf.keras.Model):
-    def __init__(self, num_actions: int):
+    def __init__(self, num_actions: int,num_inp):
         super().__init__()
 
         self.layer1 = layers.Dense(num_hidden_units, activation="sigmoid")
         self.layer2 = layers.Dense(num_hidden_units, activation="sigmoid")
         self.layer3 = layers.Dense(num_hidden_units, activation="sigmoid")
         self.actor = layers.Dense(num_actions, activation="sigmoid")
+        s = tf.expand_dims([0.0]*num_inp,0)
+        self.call(s)
+        self.predict(s)
 
     def call(self, inputs):
         x = self.layer1(inputs)
@@ -53,13 +57,17 @@ class Actor(tf.keras.Model):
         return actions[0,0].numpy(),action_probility_logits[0,actions[0,0]]
 
 class Critic(tf.keras.Model):
-    def __init__(self):
+    def __init__(self,num_inp):
         super().__init__()
 
         self.layer1 = layers.Dense(num_hidden_units, activation="tanh")
         self.layer2 = layers.Dense(num_hidden_units, activation="tanh")
         self.layer3 = layers.Dense(num_hidden_units, activation="tanh")
         self.critic = layers.Dense(1 , activation="tanh")
+        s = tf.expand_dims([0.0]*num_inp,0)
+        self.call(s)
+        self.predict(s)
+        
 
     def call(self, inputs: tf.Tensor):
         x = self.layer1(inputs)
@@ -70,19 +78,25 @@ class Critic(tf.keras.Model):
 
 class ActorCritic():
 
-    def __init__(self, num_actions):
+    def __init__(self, num_actions,act_inp,crt_inp):
 
-        self.actor_model = Actor(num_actions)
-        self.critic_model = Critic()
+        self.actor_model = Actor(num_actions,act_inp)
+        self.critic_model = Critic(crt_inp)
         self.clear()
+    
+    def load(self,actor_name,result_str):
+        self.actor_model = keras.models.load_model('Model/{}/{}/ActorModel'.format(result_str, actor_name))
+        self.critic_model =keras.models.load_model("Model/{}/{}/CriticModel".format(result_str, actor_name) )
+        
 
-    def save(self, actor_name):
-        letters = string.ascii_lowercase
-        result_str = ''.join(random.choice(letters) for i in range(12))
+
+    def save(self, actor_name,result_str):
+        
+        
         self.actor_model.save(
-            "Model/{}/ActorModel/{}".format(result_str, actor_name))
+            "Model/{}/{}/ActorModel".format(result_str, actor_name))
         self.critic_model.save(
-            "Model/{}/CriticModel/{}".format(result_str, actor_name))
+            "Model/{}/{}/CriticModel".format(result_str, actor_name))
 
     def predict(self, actor_state, fully_state, debug=False):
         with self.actor_tape, self.critic_tape:
@@ -213,9 +227,15 @@ class Worker():
     def __init__(self, env, is_subprocess=True,worker_id = 0):
         self.instance = InstanceInfo(env, worker_id)
 
-        self.harry_a2c = ActorCritic(6)
-        self.first_thieve_a2c = ActorCritic(8)
-        self.second_thieve_a2c = ActorCritic(8)
+        self.harry_a2c = ActorCritic(6,15,13)
+        self.first_thieve_a2c = ActorCritic(8,14,13)
+        self.second_thieve_a2c = ActorCritic(8,14,13)
+        #load here 
+        self.harry_a2c.load("harry","ynmsalnxzias_3000")
+        self.first_thieve_a2c.load("firstThieve","ynmsalnxzias_3000")
+        self.second_thieve_a2c.load("secondThieve","ynmsalnxzias_3000")
+        
+
 
     def create_subprocess(self, port, is_subprocess , instance_count , continer_id = 0):
         if is_subprocess:
@@ -294,6 +314,13 @@ class Worker():
             self.second_thieve_a2c.apply_loss(self.instance.second_thieve)
             print("it {} = harry = {} , first thieve = {} , second thieve = {} . time = {}".format(
                 i, hr_r, ft_r, st_r, time.time() - t))
+            if i %1000==0:
+                letters = string.ascii_lowercase
+                result_str = ''.join(random.choice(letters) for i in range(12))
+                result_str=result_str + "_"+ str(i)
+                self.harry_a2c.save("harry",result_str)
+                self.first_thieve_a2c.save("firstThieve",result_str)
+                self.second_thieve_a2c.save("secondThieve",result_str)
 
         self.close()
 
@@ -334,7 +361,7 @@ def open_unity(port=7979,visual = True):
 
 
 def start_worker(port=7979):
-    env = open_unity(port=port, visual=True)
+    env = open_unity(port=port, visual=False)
     worker = Worker(env, is_subprocess=True)
     worker.train(10000)
 seed = 59
@@ -346,5 +373,5 @@ def main():
       start_worker()      
 
 if __name__ == "__main__":
-    with tf.device("/cpu:0"):
+    #with tf.device("/cpu:0"):
         main()
