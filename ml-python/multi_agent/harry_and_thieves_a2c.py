@@ -50,11 +50,7 @@ class Actor(tf.keras.Model):
 
         return self.actor(x)
 
-    def actor_predict(self,inputs):
-        actions_probility = self.call(inputs)
-        action_probility_logits = tf.nn.softmax(actions_probility)
-        actions = tf.random.categorical(actions_probility,1,dtype=tf.int32)
-        return actions[0,0].numpy(),action_probility_logits[0,actions[0,0]]
+    
 
 class Critic(tf.keras.Model):
     def __init__(self,num_inp):
@@ -85,8 +81,8 @@ class ActorCritic():
         self.clear()
     
     def load(self,actor_name,result_str):
-        self.actor_model = keras.models.load_model('Model/{}/{}/ActorModel'.format(result_str, actor_name))
-        self.critic_model =keras.models.load_model("Model/{}/{}/CriticModel".format(result_str, actor_name) )
+        self.actor_model = keras.models.load_model('Model/{}/{}/ActorModel'.format(result_str, actor_name) , custom_objects={"Actor": Actor})
+        self.critic_model =keras.models.load_model("Model/{}/{}/CriticModel".format(result_str, actor_name),custom_objects={"Critic": Critic} )
         
 
 
@@ -98,13 +94,19 @@ class ActorCritic():
         self.critic_model.save(
             "Model/{}/{}/CriticModel".format(result_str, actor_name))
 
+    def actor_predict_f(self,actor,inputs):
+        actions_probility = actor.call(inputs)
+        action_probility_logits = tf.nn.softmax(actions_probility)
+        actions = tf.random.categorical(actions_probility,1,dtype=tf.int32)
+        return actions[0,0].numpy(),action_probility_logits[0,actions[0,0]]
+
     def predict(self, actor_state, fully_state, debug=False):
         with self.actor_tape, self.critic_tape:
 
             actor_state = tf.expand_dims(actor_state, 0)
             fully_state = tf.expand_dims(fully_state, 0)
 
-            action, act_prob = self.actor_model.actor_predict(actor_state)
+            action, act_prob = self.actor_predict_f(self.actor_model,actor_state)
             expected_reward = self.critic_model(fully_state)[0]
 
             self.actor_predict.append([act_prob])
@@ -231,9 +233,9 @@ class Worker():
         self.first_thieve_a2c = ActorCritic(8,14,13)
         self.second_thieve_a2c = ActorCritic(8,14,13)
         #load here 
-        self.harry_a2c.load("harry","ynmsalnxzias_3000")
-        self.first_thieve_a2c.load("firstThieve","ynmsalnxzias_3000")
-        self.second_thieve_a2c.load("secondThieve","ynmsalnxzias_3000")
+        #self.harry_a2c.load("harry","ynmsalnxzias_3000")
+        #self.first_thieve_a2c.load("firstThieve","ynmsalnxzias_3000")
+        #self.second_thieve_a2c.load("secondThieve","ynmsalnxzias_3000")
         
 
 
@@ -361,7 +363,7 @@ def open_unity(port=7979,visual = True):
 
 
 def start_worker(port=7979):
-    env = open_unity(port=port, visual=False)
+    env = open_unity(port=port, visual=True)
     worker = Worker(env, is_subprocess=True)
     worker.train(10000)
 seed = 59
