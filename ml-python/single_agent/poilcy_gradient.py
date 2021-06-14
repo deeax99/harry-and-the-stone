@@ -10,17 +10,25 @@ import tensorflow_probability as tfp
 import matplotlib.pyplot as plt
 import subprocess
 
+all_ep_reward=[]
+ep_count=0
+
 num_inputs = 4
 num_actions = 4
 num_hidden = 128
 gamma=0.99
+
+
 opt = keras.optimizers.Adam(learning_rate=0.01)
+
 app_name = 'Environment/HarryAndTheStone.exe' 
 args = [app_name ]
 subprocess.Popen(args, stdout=subprocess.DEVNULL)
+
+
 unity = Unity()
 
-class Model(tf.keras.Model):
+class poilcy_gradient(tf.keras.Model):
   
   def __init__(self):
     super().__init__()
@@ -35,7 +43,7 @@ class Model(tf.keras.Model):
     layer_Output = self.out(layer_Output)
     return layer_Output
 
-model = Model()
+model = poilcy_gradient()
 
 def Chose_Action(state):
   prob = model(np.array([state]))
@@ -43,36 +51,32 @@ def Chose_Action(state):
   action = dist.sample()
   return int(action.numpy()[0])
   
-def train(states, rewards, actions):
-  sum_reward = 0
-  discnt_rewards = []
+def learn(states, rewards, actions):
+  reward_sum = 0
+  dis_rewards = []
   rewards.reverse()
 
   for r in rewards:
-    sum_reward = r + gamma*sum_reward
-    discnt_rewards.append(sum_reward)
+    reward_sum = r + gamma*reward_sum
+    dis_rewards.append(reward_sum)
 
+  dis_rewards.reverse()
 
-  discnt_rewards.reverse()
-
-  for state, reward, action in zip(states, discnt_rewards, actions):
+  for state, reward, action in zip(states, dis_rewards, actions):
     with tf.GradientTape() as tape:
       p = model(np.array([state]), training=True)
-      loss = a_loss(p,action,reward)
-    grads = tape.gradient(loss, model.trainable_variables)
-    opt.apply_gradients(zip(grads, model.trainable_variables))
-
-
+      loss = calculate_loss(p,action,reward)
+      gradient = tape.gradient(loss, model.trainable_variables)
+      opt.apply_gradients(zip(gradient, model.trainable_variables))
 
   
-def a_loss(prob, action, reward): 
+def calculate_loss(prob, action, reward): 
   dist = tfp.distributions.Categorical(probs=prob, dtype=tf.float32)
   log_prob = dist.log_prob(action)
-  loss = -log_prob*reward
+  loss = -log_prob * reward
   return loss 
 
-all_ep_reward=[]
-ep=0
+
 while(True):
   done = False
   state = unity.reset()
@@ -98,16 +102,15 @@ while(True):
     
     if done:
           all_ep_reward.append(total_reward)
-          ep+=1
+          ep_count+=1
 
-          if ep%10000==0 :
+          if ep_count%10000==0 :
                 
-                plt.plot(np.arange(ep),all_ep_reward , color='green')
+                plt.plot(np.arange(ep_count),all_ep_reward , color='green')
                 plt.xlabel('Episode')
                 plt.ylabel('Reward')
                 plt.title('Reward Per Episode Using Q-Learning  ', y=1.1)
                 plt.show()
 
-          train(states, rewards, actions)
-          #print("total step for this episord are {}".format(t))
-          print("total reward = {} episd = {}".format(total_reward,ep))
+          learn(states, rewards, actions)
+          print("total reward = {} episd = {}".format(total_reward,ep_count))
