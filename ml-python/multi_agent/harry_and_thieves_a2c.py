@@ -24,7 +24,7 @@ os.environ['TF_XLA_FLAGS'] = '--tf_xla_enable_xla_devices'
 DEBUG = False
 
 optimizer_actor = tf.keras.optimizers.Adam(learning_rate=3e-3)
-optimizer_critic = tf.keras.optimizers.Adam(learning_rate=5e-4)
+optimizer_critic = tf.keras.optimizers.Adam(learning_rate=1e-4)
 
 huber_loss = tf.keras.losses.Huber(reduction=tf.keras.losses.Reduction.SUM)
 
