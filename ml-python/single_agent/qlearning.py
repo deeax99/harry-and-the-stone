@@ -133,7 +133,8 @@ while (True):
         ep+=1
         all_ep_r.append(episode_reward)
         
-        print('Ep: %i' % ep,"|Ep_r: %i" % episode_reward)
+        print("total reward = {} episd = {}".format(episode_reward,ep))
+        
         if ep %10000 ==0:
             plt.plot(np.arange(ep),all_ep_r , color='green')
             plt.xlabel('Episode')
