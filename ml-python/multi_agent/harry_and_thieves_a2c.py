@@ -50,8 +50,6 @@ class Actor(tf.keras.Model):
 
         return self.actor(x)
 
-    
-
 class Critic(tf.keras.Model):
     def __init__(self,num_inp):
         super().__init__()
