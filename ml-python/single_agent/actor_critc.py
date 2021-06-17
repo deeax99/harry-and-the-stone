@@ -19,12 +19,14 @@ from tcp import TCPUitility
 from tcp import TCPConnection
 import string
 from tensorflow import keras
+import matplotlib.pyplot as plt
+
 
 os.environ['TF_XLA_FLAGS'] = '--tf_xla_enable_xla_devices'
 
 DEBUG = False
 
-optimizer_actor = tf.keras.optimizers.Adam(learning_rate=3e-3)
+optimizer_actor = tf.keras.optimizers.Adam(learning_rate=4e-4)
 optimizer_critic = tf.keras.optimizers.Adam(learning_rate=1e-4)
 
 huber_loss = tf.keras.losses.Huber(reduction=tf.keras.losses.Reduction.SUM)
@@ -54,10 +56,10 @@ class Critic(tf.keras.Model):
     def __init__(self,num_inp):
         super().__init__()
 
-        self.layer1 = layers.Dense(num_hidden_units, activation="tanh")
-        self.layer2 = layers.Dense(num_hidden_units, activation="tanh")
-        self.layer3 = layers.Dense(num_hidden_units, activation="tanh")
-        self.critic = layers.Dense(1 , activation="tanh")
+        self.layer1 = layers.Dense(num_hidden_units, activation="relu")
+        self.layer2 = layers.Dense(num_hidden_units, activation="relu")
+        self.layer3 = layers.Dense(num_hidden_units, activation="relu")
+        self.critic = layers.Dense(1 , activation="relu")
         s = tf.expand_dims([0.0]*num_inp,0)
         self.call(s)
         self.predict(s)
@@ -116,7 +118,7 @@ class ActorCritic():
 
         with self.actor_tape, self.critic_tape:
             actor_loss, critic_loss = self.compute_loss(reward)
-        print("actor loss {} , critic loss {}".format(actor_loss,critic_loss))
+        #print("actor loss {} , critic loss {}".format(actor_loss,critic_loss))
         grads_actor, grads_critic = self.compute_gradient(
             actor_loss, critic_loss)
 
@@ -180,7 +182,7 @@ class ActorCritic():
         returns = returns.stack()[::-1]
 
         if standardize:
-            returns /= 10
+            returns /= 250
             #returns = ((returns - tf.math.reduce_mean(returns)) /
             #           (tf.math.reduce_std(returns) + eps))
 
@@ -240,18 +242,23 @@ class Worker():
         return sum(self.instance.harry_reward)
 
     def train(self, iteration_count):
-        print("Strat Tranning")
+        #print("Strat Tranning")
         t = time.time()
+        all_ep_reward=[]
+        ep=0
         for i in range(iteration_count):
             hr_r = self.run_episode()
             self.harry_a2c.apply_loss(self.instance.harry_reward)
-            print("it {} = harry = {} time = {}".format(
-                i, hr_r, time.time() - t))
-            if i %1000==0:
-                letters = string.ascii_lowercase
-                result_str = ''.join(random.choice(letters) for i in range(12))
-                result_str=result_str + "_"+ str(i)
-                self.harry_a2c.save("harry",result_str)
+            all_ep_reward.append(hr_r)            
+            ep+=1
+            print("total reward = {} episd = {}".format(hr_r,i))
+
+            if ep %10000 == 0:
+                plt.plot(np.arange(ep),all_ep_reward , color='green')
+                plt.xlabel('Episode')
+                plt.ylabel('Reward')
+                plt.title('Reward Per Episode Using Q-Learning  ', y=1.1)
+                plt.show()
 
         self.close()
 

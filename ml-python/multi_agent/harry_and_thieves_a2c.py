@@ -20,6 +20,8 @@ from tcp import TCPConnection
 import string
 from tensorflow import keras
 
+
+
 os.environ['TF_XLA_FLAGS'] = '--tf_xla_enable_xla_devices'
 
 DEBUG = False
