@@ -1,4 +1,4 @@
-we used the python version 3.8 in our progict and you need to dowload
+we used the python version 3.8 in our project and you need to download
 tensorflow and numpy and matplotlib and tensorflow-probability because the progrram uses them 
 
 you can download tensorflow using (cmd) with this command 
