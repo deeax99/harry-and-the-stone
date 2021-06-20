@@ -233,9 +233,9 @@ class Worker():
         self.first_thieve_a2c = ActorCritic(8,14,13)
         self.second_thieve_a2c = ActorCritic(8,14,13)
         #load here 
-        #self.harry_a2c.load("harry","ynmsalnxzias_3000")
-        #self.first_thieve_a2c.load("firstThieve","ynmsalnxzias_3000")
-        #self.second_thieve_a2c.load("secondThieve","ynmsalnxzias_3000")
+        self.harry_a2c.load("harry","niinwmniewbk_7000")
+        self.first_thieve_a2c.load("firstThieve","niinwmniewbk_7000")
+        self.second_thieve_a2c.load("secondThieve","niinwmniewbk_7000")
         
 
 

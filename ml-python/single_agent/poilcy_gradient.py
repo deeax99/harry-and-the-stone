@@ -10,6 +10,9 @@ import tensorflow_probability as tfp
 import matplotlib.pyplot as plt
 import subprocess
 
+tf.random.set_seed(47)
+np.random.seed(47)
+
 all_ep_reward=[]
 ep_count=0
 
@@ -86,7 +89,7 @@ while(True):
   actions = []
   while not done:
     
-    action =Chose_Action(state)
+    action = Chose_Action(state)
     
     next_state,reward,done= unity.action(action)
     

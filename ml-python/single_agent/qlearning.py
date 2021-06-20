@@ -84,7 +84,7 @@ class QLearn:
 
     def learn_2 (self , trajectorys  , episode_reward):
         for trajectory in trajectorys:
-            state = (trajectory["state"] , trajectory["action"])
+            state = (tuple(trajectory["state"]) , trajectory["action"])
             if self.q.get(state , None) != None:
                 self.q[state] =  max(self.q[state] , episode_reward)
             else :
@@ -104,41 +104,37 @@ while (True):
     episode_reward=0
     state = env.reset()
     done=False
-    if done == True :
-        q_model.learn_2(trajectorys , episode_reward)
-        all_reward.append(episode_reward)     
     
-    else :
-        while(True):
-
-            state=hash(tuple(state))
-            action = q_model.choose_action(state)
-            state,current_reward , done =env.action(action)
-            
-            trajectory = {}
-
-            trajectory["state"] = state
-            trajectory["action"] = action
-            trajectory["reward"] = current_reward
-
-            trajectorys.append(trajectory)
-
-            episode_reward += current_reward
-            
-            if done :
-                break ;
-            
-            
-        trajectorys[-1]["reward"] = current_reward
-        ep+=1
-        all_ep_r.append(episode_reward)
+    while(True):
+        state = hash(tuple(state))
+        action = q_model.choose_action(state)
+        state,current_reward , done =env.action(action)
         
-        print("total reward = {} episd = {}".format(episode_reward,ep))
+        trajectory = {}
+
+        trajectory["state"] = state
+        trajectory["action"] = action
+        trajectory["reward"] = current_reward
+
+        trajectorys.append(trajectory)
+
+        episode_reward += current_reward
         
-        if ep %10000 ==0:
-            plt.plot(np.arange(ep),all_ep_r , color='green')
-            plt.xlabel('Episode')
-            plt.ylabel('Reward')
-            plt.title('Reward Per Episode Using Q-Learning  ', y=1.1)
-            plt.show()
+        if done :
+            q_model.learn_2(trajectorys , episode_reward)
+            all_reward.append(episode_reward)
+            state = env.reset()
+            
+            trajectorys[-1]["reward"] = current_reward
+            ep+=1
+            all_ep_r.append(episode_reward)
+            
+            print("total reward = {} episd = {}".format(episode_reward,ep))
+            episode_reward = 0
+            if ep %10000 ==0:
+                plt.plot(np.arange(ep),all_ep_r , color='green')
+                plt.xlabel('Episode')
+                plt.ylabel('Reward')
+                plt.title('Reward Per Episode Using Q-Learning  ', y=1.1)
+                plt.show()
 
