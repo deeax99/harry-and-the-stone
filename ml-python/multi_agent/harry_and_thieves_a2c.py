@@ -20,6 +20,8 @@ from tcp import TCPConnection
 import string
 from tensorflow import keras
 
+
+
 os.environ['TF_XLA_FLAGS'] = '--tf_xla_enable_xla_devices'
 
 DEBUG = False
@@ -363,7 +365,7 @@ def open_unity(port=7979,visual = True):
 def start_worker(port=7979):
     env = open_unity(port=port, visual=True)
     worker = Worker(env, is_subprocess=True)
-    worker.train(10000)
+    worker.train(1000000)
 seed = 59
 #seed = 19
 tf.random.set_seed(seed)
